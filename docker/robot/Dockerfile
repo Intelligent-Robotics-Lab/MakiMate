@@ -27,6 +27,8 @@ ENV AMENT_PREFIX_PATH="/ws/install:/opt/ros/jazzy" \
 
 # Always source environments before running any command
 COPY docker/robot/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && sed -i 's/\r$//' /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command runs your node

@@ -72,12 +72,12 @@ MakiMate uses:
 
 ## 🧠 Clone the Repository
 ```bash
-git clone https://github.com/pourya-shahverdi/MakiMate.git
+git clone https://github.com/Intelligent-Robotics-Lab/MakiMate.git
 cd MakiMate
 ```
 Or, if using SSH:
 ```bash
-git clone git@github.com:pourya-shahverdi/MakiMate.git
+git clone git@github.com:Intelligent-Robotics-Lab/MakiMate.git
 cd MakiMate
 ```
 
@@ -101,8 +101,8 @@ docker login ghcr.io
 docker buildx build . \
   -f docker/robot/Dockerfile \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/pourya-shahverdi/makimate:latest \
-  -t ghcr.io/pourya-shahverdi/makimate:v0.1.0 \
+  -t ghcr.io/Intelligent-Robotics-Lab/makimate:latest \
+  -t ghcr.io/Intelligent-Robotics-Lab/makimate:v0.1.0 \
   --push
 ```
 

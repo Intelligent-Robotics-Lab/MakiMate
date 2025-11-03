@@ -61,9 +61,9 @@ MakiMate/
 ## ⚙️ Getting Started
 
 The Maki robot runs on **Ubuntu ARM64**, but you can develop for it from **Windows**, **Linux**, or **macOS**. Choose the setup guide for your operating system:
-- **Windows**: [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md)
 - **Linux (Ubuntu 22.04/24.04)**: [docs/SETUP_LINUX.md](docs/SETUP_LINUX.md)
 - **macOS**: [docs/SETUP_MACOS.md](docs/SETUP_MACOS.md)
+- **Windows**: [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md)
 
 Each guide covers:
 1. Installing Docker and Git.

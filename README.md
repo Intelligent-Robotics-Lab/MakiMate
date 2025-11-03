@@ -1,6 +1,6 @@
 # 🤖 MakiMate
 
-**MakiMate** is a cross-platform **ROS 2 Jazzy** codebase tailored for the **Maki robot**, which runs on **Ubuntu ARM64**. It enables seamless development, testing, and deployment of robot software on **Windows**, **Linux**, or **macOS** using **Docker**, ensuring a unified environment regardless of your development machine.
+**MakiMate** is a cross-platform **ROS 2 Jazzy** codebase tailored for the **Maki robot**, which runs on **Ubuntu ARM64**. It enables seamless development, testing, and deployment of robot software on **Linux**, **macOS**, or **Windows** using **Docker**, ensuring a unified environment regardless of your development machine.
 
 ---
 

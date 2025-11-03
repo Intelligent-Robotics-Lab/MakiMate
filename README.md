@@ -80,7 +80,7 @@ With **Docker** and **Buildx** configured:
 
 ```bash
 # Clone the repository
-git clone https://github.com/pourya-shahverdi/MakiMate.git
+git clone https://github.com/Intelligent-Robotics-Lab/MakiMate.git
 cd MakiMate
 
 # Build the development image
@@ -127,7 +127,7 @@ We use semantic versioning:
 - `latest`: Latest stable image.
 - `v0.1.0`, `v0.2.0`, ...: Tagged release builds.
 
-Images are stored at: [ghcr.io/pourya-shahverdi/makimate](ghcr.io/pourya-shahverdi/makimate).
+Images are stored at: [ghcr.io/Intelligent-Robotics-Lab/makimate](ghcr.io/Intelligent-Robotics-Lab/makimate).
 
 ---
 
@@ -152,7 +152,7 @@ Contributions are welcome! Please:
 ## 🫶 Need Help?
 
 For support, use one of these options:
-- **GitHub Issues**: Open an issue on the [MakiMate GitHub repository](https://github.com/pourya-shahverdi/MakiMate/issues):
+- **GitHub Issues**: Open an issue on the [MakiMate GitHub repository](https://github.com/Intelligent-Robotics-Lab/MakiMate/issues):
   1. Go to the **Issues** tab.
   2. Click **New Issue**.
   3. Provide a clear title (e.g., "Docker Build Error on Windows") and describe your problem, including any error messages or steps to reproduce.

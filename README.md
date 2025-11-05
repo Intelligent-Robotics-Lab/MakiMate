@@ -133,11 +133,7 @@ Images are stored at: [ghcr.io/Intelligent-Robotics-Lab/makimate](ghcr.io/Intell
 
 ## 🧑‍💻 Contributing
 
-Contributions are welcome! Please:
-- Work inside Docker to align with Maki’s Ubuntu ARM64 environment.
-- Test builds before pushing.
-- Keep commits small and meaningful.
-- Follow ROS 2 Python package structure for new nodes.
+Contributions are welcome! Please follow [docs/CONTRIBUTION_GUIDE.md](docs/CONTRIBUTION_GUIDE.md)
 
 ---
 

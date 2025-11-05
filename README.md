@@ -127,7 +127,7 @@ We use semantic versioning:
 - `latest`: Latest stable image.
 - `v0.1.0`, `v0.2.0`, ...: Tagged release builds.
 
-Images are stored at: [ghcr.io/Intelligent-Robotics-Lab/makimate](ghcr.io/Intelligent-Robotics-Lab/makimate).
+Images are stored at: [ghcr.io/Intelligent-Robotics-Lab/makimate](ghcr.io/intelligent-robotics-lab/makimate).
 
 ---
 

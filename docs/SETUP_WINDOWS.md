@@ -121,7 +121,10 @@ docker buildx build . \
 ## 🧩 Run the Container
 1. Run the container to verify ROS 2:
    ```bash
+   docker pull ghcr.io/intelligent-robotics-lab/makimate:latest
+   docker tag ghcr.io/intelligent-robotics-lab/makimate:latest makimate:dev
    docker run --rm -it makimate:dev
+
    ```
    **Expected Output**:
    ```

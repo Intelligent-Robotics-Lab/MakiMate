@@ -110,8 +110,8 @@ docker login ghcr.io
 docker buildx build . \
   -f docker/robot/Dockerfile \
   --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/Intelligent-Robotics-Lab/makimate:latest \
-  -t ghcr.io/Intelligent-Robotics-Lab/makimate:v0.1.0 \
+  -t ghcr.io/intelligent-robotics-lab/makimate:latest \
+  -t ghcr.io/intelligent-robotics-lab/makimate:v0.1.0 \
   --push
 ```
 💡 The multi-architecture build takes longer due to compiling for multiple platforms.

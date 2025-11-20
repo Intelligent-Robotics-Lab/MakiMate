@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>server_llm</name>
+  <version>0.0.1</version>
+  <description>ROS2 node that bridges prompts to an external LLM HTTP server and streams tokens back.</description>
+  <maintainer email="you@example.com">MakiMate</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- requests is installed via pip in user env -->
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

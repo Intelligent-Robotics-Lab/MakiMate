@@ -1,0 +1,86 @@
+# Each expression is a list of 6 RELATIVE degrees:
+# [neck_yaw, neck_pitch, eyes_pitch, eyes_yaw, lid_left, lid_right]
+#
+# 0 means "neutral" for each joint, based on how we tuned the limits.
+
+# neutral:
+#   joints: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+# listening:
+#   # slight head tilt toward user, tiny up tilt
+#   joints: [-10.0, -5.0, 0.0, 0.0, 0.0, 0.0]
+
+# curious_left:
+#   # turn head + eyes left, lids slightly relaxed
+#   joints: [-25.0, -5.0, 2.0, -20.0, 5.0, 5.0]
+
+# curious_right:
+#   # turn head + eyes right
+#   joints: [25.0, -5.0, 2.0, 20.0, 5.0, 5.0]
+
+# happy:
+#   # slight head down, eyes up, lids a bit closed = “smiley”
+#   joints: [0.0, 5.0, 6.0, 0.0, 10.0, 10.0]
+
+# sad:
+#   # head down, eyes down, lids a bit closed
+#   joints: [0.0, 10.0, -8.0, 0.0, 8.0, 8.0]
+
+# sleepy:
+#   # neutral head, lids mostly closed
+#   joints: [0.0, 0.0, 0.0, 0.0, 20.0, 20.0]
+
+# wide_awake:
+#   # head slightly up, eyes up, lids fully open (but within your tested range)
+#   joints: [0.0, -8.0, 8.0, 0.0, -10.0, -10.0]
+
+
+
+
+
+
+
+# Each expression is a list of 6 RELATIVE degrees:
+# [neck_yaw, neck_pitch, eyes_pitch, eyes_yaw, lid_left, lid_right]
+#
+# 0 means "neutral" for each joint (your tuned midpoints).
+# Eyelid directions (from your calibration):
+#   ID5 (left):  negative = closed,  positive = open
+#   ID6 (right): negative = open,    positive = closed
+
+neutral:
+  joints: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+listening:
+  # slight head tilt toward user, a bit up
+  joints: [-10.0, -5.0, 0.0, 0.0, 20.0, -20.0]
+
+curious_left:
+  # head & eyes left, lids slightly relaxed (a *bit* more closed than neutral)
+  joints: [-25.0, -5.0, 2.0, -20.0, 3.0, -18.0]
+
+curious_right:
+  # head & eyes right, same lid behavior
+  joints: [25.0, -5.0, 2.0, 20.0, 18.0, -3.0]
+
+happy:
+  # slight head down, eyes up, lids slightly closed = "smiley"
+  # left lid:  -8  (closing a bit)
+  # right lid: +8  (closing a bit)
+  joints: [0.0, 5.0, 6.0, 0.0, 17.0, -20.0]
+
+sad:
+  # head down, eyes down, lids more closed
+  joints: [0.0, 10.0, -8.0, 0.0, -5.0, 10.0]
+
+sleepy:
+  # neutral head, lids mostly closed (but not fully)
+  # left:  -15 (~80% closed of your -19)
+  # right: +15 (~60% closed of your +26/+28)
+  joints: [0.0, 0.0, 0.0, 0.0, -19.0, 25.0]
+
+wide_awake:
+  # head slightly up, eyes up, lids more open than neutral
+  # left:  +10 (more open)
+  # right: -10 (more open)
+  joints: [0.0, -8.0, 8.0, 0.0, 18.0, -18.0]

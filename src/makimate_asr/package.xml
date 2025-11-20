@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>makimate_asr</name>
+  <version>0.0.1</version>
+  <description>ASR nodes for MakiMate using ReSpeaker USB mic and Vosk.</description>
+
+  <maintainer email="you@example.com">Bao</maintainer>
+  <license>MIT</license>
+
+  <!-- Runtime deps -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- Tell colcon this is a Python (ament_python) package -->
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

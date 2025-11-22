@@ -7,9 +7,11 @@ class ASRCommandRouter(Node):
     """
     Extended to support multiple sleep phrases
     (e.g., 'good bye', 'goodnight', 'good night')
+    and reset the LLM conversation when going to sleep.
     """
 
     def __init__(self):
+        # Node will show up as ai_command_router in ROS graph
         super().__init__("ai_command_router")
 
         # ---- Parameters ----
@@ -23,10 +25,14 @@ class ASRCommandRouter(Node):
         # Wake and sleep phrases
         self.declare_parameter("wake_phrase", "hello")
         self.declare_parameter("sleep_phrase", "good bye")
-        self.declare_parameter("wake_greeting",
-                               "Hello! I'm awake and ready to talk. My name is Maki Mate, how may I help you.")
-        self.declare_parameter("sleep_farewell",
-                               "Goodbye! I'm going back to sleep now.")
+        self.declare_parameter(
+            "wake_greeting",
+            "Hello! I'm awake and ready to talk. My name is Maki Mate, how may I help you."
+        )
+        self.declare_parameter(
+            "sleep_farewell",
+            "Goodbye! I'm going back to sleep now."
+        )
 
         asr_topic = self.get_parameter("asr_topic").value
         llm_request_topic = self.get_parameter("llm_request_topic").value
@@ -40,7 +46,7 @@ class ASRCommandRouter(Node):
         self._sleep_farewell = self.get_parameter("sleep_farewell").value
 
         # --------------------------------------------------
-        # NEW: list of phrases that put Maki to sleep
+        # List of phrases that put Maki to sleep
         # --------------------------------------------------
         self._sleep_phrases = [
             self._sleep_phrase,
@@ -50,8 +56,12 @@ class ASRCommandRouter(Node):
             "night night",
             "good night maki",
             "goodnight maki",
-            "good my"
+            "good my",
+            "dubai",
         ]
+
+        # LLM reset command
+        self._reset_command = "/reset"
 
         # ---- Publishers ----
         self._llm_req_pub = self.create_publisher(String, llm_request_topic, 10)
@@ -60,14 +70,17 @@ class ASRCommandRouter(Node):
 
         # ---- Subscribers ----
         self._asr_sub = self.create_subscription(String, asr_topic, self._on_asr, 10)
-        self._asr_enable_sub = self.create_subscription(Bool, asr_enable_topic, self._on_asr_enable, 10)
+        self._asr_enable_sub = self.create_subscription(
+            Bool, asr_enable_topic, self._on_asr_enable, 10
+        )
 
         # ---- State ----
         self._awake = False
         self._pending_sleep = False
 
+        # Start asleep
         self._publish_awake(False)
-        self.get_logger().info("ASRCommandRouter started.")
+        self.get_logger().info("AICommandRouter started (node name: ai_command_router).")
 
     # ------------------------------------------------------------------ #
     # Helpers
@@ -87,6 +100,15 @@ class ASRCommandRouter(Node):
         self._tts_pub.publish(msg)
         self.get_logger().info(f"[Router->TTS] {text!r}")
 
+    def _send_llm_command(self, command: str):
+        """Send a control command like /reset to the LLM via /llm/request."""
+        if not command:
+            return
+        msg = String()
+        msg.data = command
+        self._llm_req_pub.publish(msg)
+        self.get_logger().info(f"[Router->LLM] Sent command: {command!r}")
+
     # ------------------------------------------------------------------ #
     # Callbacks
     # ------------------------------------------------------------------ #
@@ -98,7 +120,8 @@ class ASRCommandRouter(Node):
             return
 
         self.get_logger().info(
-            f"ASRCommandRouter received: {text!r} (awake={self._awake}, pending_sleep={self._pending_sleep})"
+            f"AICommandRouter received: {text!r} "
+            f"(awake={self._awake}, pending_sleep={self._pending_sleep})"
         )
 
         # While asleep: only react to wake phrase
@@ -110,18 +133,25 @@ class ASRCommandRouter(Node):
             return
 
         # --------------------------------------------------
-        # NEW: Check any sleep phrase in list
+        # Check any sleep phrase in list
         # --------------------------------------------------
         if any(phrase in low for phrase in self._sleep_phrases):
+            # 1) Speak farewell immediately
             self._speak_immediate(self._sleep_farewell)
+
+            # 2) Reset LLM memory so next wake is a fresh conversation
+            self._send_llm_command(self._reset_command)
+
+            # 3) Mark pending sleep; final asleep state happens once
+            #    ASR is re-enabled after TTS is done.
             self._pending_sleep = True
             self.get_logger().info(
                 f"Sleep phrase detected in: {text!r}. "
-                "Waiting for ASR re-enable before sleeping."
+                "Sent /reset to LLM and waiting for ASR re-enable before sleeping."
             )
             return
 
-        # Normal conversation
+        # Normal conversation: forward to LLM
         out = String()
         out.data = text
         self._llm_req_pub.publish(out)
@@ -132,7 +162,9 @@ class ASRCommandRouter(Node):
         if self._pending_sleep and enabled:
             self._pending_sleep = False
             self._publish_awake(False)
-            self.get_logger().info("ASR re-enabled → Maki going to sleep.")
+            self.get_logger().info(
+                "ASR re-enabled after goodbye → Maki going to sleep (LLM already reset)."
+            )
 
 
 def main(args=None):

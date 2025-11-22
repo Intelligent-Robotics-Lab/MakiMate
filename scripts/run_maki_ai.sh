@@ -78,7 +78,7 @@ source ~/MakiMate/install/setup.bash
 ros2 run makimate_asr natural_tts_node \
   --ros-args \
     -p backend:=piper_python \
-    -p piper_model:=/home/makimate/piper_models/en_US-john-medium.onnx \
+    -p piper_model:=/home/makimate/MakiMate/piper_models/en_US-john-medium.onnx \
     -p input_topic:=/llm/stream
 "
 

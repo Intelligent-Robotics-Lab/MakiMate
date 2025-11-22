@@ -49,7 +49,7 @@ class NaturalTTS(Node):
 
         # Piper params
         self.declare_parameter(
-            "piper_command", "/home/makimate/piper_bin/piper/piper"
+            "piper_command", "/home/makimate/MakiMate/piper_bin/piper/piper"
         )
         self.declare_parameter("piper_model", "")
         self.declare_parameter(

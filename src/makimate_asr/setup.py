@@ -21,11 +21,15 @@ setup(
     entry_points={
         'console_scripts': [
             'respeaker_vosk_asr = makimate_asr.respeaker_vosk_asr:main',
-            'simple_tts_node = makimate_asr.simple_tts_node:main',
             'asr_led_node = makimate_asr.asr_led_node:main',
             'asr_command_router = makimate_asr.asr_command_router:main',
+
+            # Only the new natural TTS node is exposed as an executable
+            'natural_tts_node = makimate_asr.natural_tts_node:main',
         ],
-    },
+    }
+
+
 
 
 

@@ -22,6 +22,12 @@ class ASRCommandRouter(Node):
         self.declare_parameter('llm_response_topic', '/llm/response')
         self.declare_parameter('awake_topic', '/maki/awake')
 
+        # NEW: where TTS actually listens (natural_tts_node)
+        self.declare_parameter('tts_topic', '/llm/stream')
+
+        # NEW: proper ASR enable/mute topic
+        self.declare_parameter('asr_enable_topic', '/asr/enable')
+
         # Phrases
         self.declare_parameter('wake_phrase', 'hello')
         self.declare_parameter('sleep_phrase', 'good bye')
@@ -38,6 +44,8 @@ class ASRCommandRouter(Node):
         llm_request_topic = self.get_parameter('llm_request_topic').value
         llm_response_topic = self.get_parameter('llm_response_topic').value
         awake_topic = self.get_parameter('awake_topic').value
+        tts_topic = self.get_parameter('tts_topic').value
+        asr_enable_topic = self.get_parameter('asr_enable_topic').value
 
         self.wake_phrase = self.get_parameter('wake_phrase').value.lower()
         self.sleep_phrase = self.get_parameter('sleep_phrase').value.lower()
@@ -52,6 +60,12 @@ class ASRCommandRouter(Node):
         self.llm_response_pub = self.create_publisher(String, llm_response_topic, 10)
         self.awake_pub = self.create_publisher(Bool, awake_topic, 10)
 
+        # NEW: direct TTS publisher (natural_tts_node input)
+        self.tts_pub = self.create_publisher(String, tts_topic, 10)
+
+        # NEW: proper ASR enable/mute publisher
+        self.asr_enable_pub = self.create_publisher(Bool, asr_enable_topic, 10)
+
         # Subscriber to raw ASR text
         self.asr_sub = self.create_subscription(
             String,
@@ -63,7 +77,8 @@ class ASRCommandRouter(Node):
         self._publish_awake()
         self.get_logger().info(
             f"ASRCommandRouter started. Initial state: asleep. "
-            f"Wake phrase='{self.wake_phrase}', sleep phrase='{self.sleep_phrase}'."
+            f"Wake phrase='{self.wake_phrase}', sleep phrase='{self.sleep_phrase}'. "
+            f"TTS topic='{tts_topic}', ASR enable topic='{asr_enable_topic}'."
         )
 
     def _publish_awake(self):
@@ -119,12 +134,28 @@ class ASRCommandRouter(Node):
         self.get_logger().info(f"Forwarded to LLM: {text!r}")
 
     def _speak(self, text: str):
-        """Publish directly to LLM response so TTS will say it."""
+        """
+        Speak predetermined system text (greeting/farewell).
+
+        This bypasses the LLM and goes straight to TTS, and mutes ASR
+        via /asr/enable so it does not hear itself.
+        """
+
+        # 1. Immediately disable ASR (using the real ASR enable topic)
+        asr_off = Bool()
+        asr_off.data = False
+        self.asr_enable_pub.publish(asr_off)
+        self.get_logger().info("ASR disabled for immediate system speech.")
+
+        # 2. Send text directly to TTS (natural_tts_node input)
         msg = String()
         msg.data = text
-        self.llm_response_pub.publish(msg)
-        self.get_logger().info(f"Saying (direct TTS): {text!r}")
+        self.tts_pub.publish(msg)
+        self.get_logger().info(f"Saying system message (direct TTS): {text!r}")
 
+        # NOTE: We do NOT re-enable ASR here.
+        # natural_tts_node will re-enable /asr/enable after it finishes speaking,
+        # just like it does for normal LLM responses.
 
 
 def main(args=None):

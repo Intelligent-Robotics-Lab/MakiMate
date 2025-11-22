@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'face_tracker = makimate_vision.face_tracker_node:main',
+            'face_to_maki = makimate_vision.face_to_maki:main',
         ],
     },
 

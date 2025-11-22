@@ -77,7 +77,7 @@ sleepy:
   # neutral head, lids mostly closed (but not fully)
   # left:  -15 (~80% closed of your -19)
   # right: +15 (~60% closed of your +26/+28)
-  joints: [0.0, 0.0, 0.0, 0.0, -19.0, 25.0]
+  joints: [0.0, 0.0, 10.0, 0.0, -19.0, 25.0]
 
 wide_awake:
   # head slightly up, eyes up, lids more open than neutral

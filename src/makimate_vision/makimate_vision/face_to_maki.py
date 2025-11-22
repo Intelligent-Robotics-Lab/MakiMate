@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import Int32MultiArray, Float64MultiArray
+from std_msgs.msg import Int32MultiArray, Float64MultiArray, Bool
 
 
 class FaceToMaki(Node):
@@ -20,10 +20,22 @@ class FaceToMaki(Node):
       y_offset < 0  => face is below center (Maki should look down)
 
     These are consumed by the 'look_at_user' behavior in MakiBehavior.
+
+    NOW MODIFIED:
+      - Only publishes face_pos when /maki/awake == True
     """
 
     def __init__(self):
         super().__init__("face_to_maki")
+
+        # ---- Awake state ----
+        self.awake = False
+        self.awake_sub = self.create_subscription(
+            Bool,
+            "/maki/awake",
+            self._on_awake,
+            10,
+        )
 
         # Parameters
         self.declare_parameter("bbox_topic", "/maki/largest_face_bbox")
@@ -64,7 +76,21 @@ class FaceToMaki(Node):
             f"  image_width={self.image_width}, image_height={self.image_height}"
         )
 
+    # -------------------------
+    # Awake callback
+    # -------------------------
+    def _on_awake(self, msg: Bool):
+        self.awake = bool(msg.data)
+        self.get_logger().info(f"FaceToMaki: awake = {self.awake}")
+
+    # -------------------------
+    # Bbox callback
+    # -------------------------
     def _on_bbox(self, msg: Int32MultiArray):
+        # If Maki is sleeping, don't send any tracking commands
+        if not self.awake:
+            return
+
         data = list(msg.data)
         if len(data) < 4:
             return

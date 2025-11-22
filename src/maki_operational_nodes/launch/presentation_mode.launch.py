@@ -18,7 +18,7 @@ def generate_launch_description():
             + "python -m makimate_asr.respeaker_vosk_asr "
               "--ros-args "
               "-p sample_rate:=16000.0 "
-              "-p device:=3 "
+              "-p device:=6 "
               "-p model_path:=/home/makimate/vosk_models/vosk-model-small-en-us-0.15 "
               "-p publish_llm:=false "
               "-p asr_topic:=/asr/text "
@@ -94,7 +94,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # 6) Maki expressions (names -> joint goals)
+    # 6) Maki expressions
     maki_expressions = ExecuteProcess(
         cmd=[
             "bash",
@@ -119,7 +119,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # 8) DXL controller (actual motors)
+    # 8) DXL controller
     maki_dxl_node = ExecuteProcess(
         cmd=[
             "bash",
@@ -130,13 +130,53 @@ def generate_launch_description():
         output="screen",
     )
 
-    # 9) Higher-level motion behavior (your existing one)
+    # 9) Higher-level behavior
     maki_behavior_node = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
             + "ros2 run makimate_dxl maki_behavior"
+        ],
+        output="screen",
+    )
+
+    # 10) Camera driver
+    camera_node = ExecuteProcess(
+        cmd=[
+            "bash",
+            "-lc",
+            shell_prefix
+            + "ros2 run camera_ros camera_node "
+              "--ros-args "
+              "-p camera:=0 "
+              "-p role:=video "
+              "-p sensor_mode:='640:480' "
+              "-p width:=640 "
+              "-p height:=480 "
+              "-p format:=BGR888 "
+        ],
+        output="screen",
+    )
+
+    # 11) Face tracker (THIS WAS BROKEN — FIXED HERE)
+    face_tracker_node = ExecuteProcess(
+        cmd=[
+            "bash",
+            "-lc",
+            shell_prefix
+            + "ros2 run makimate_vision face_tracker"
+        ],
+        output="screen",
+    )
+
+    # 12) Face→Maki head control
+    face_to_maki_node = ExecuteProcess(
+        cmd=[
+            "bash",
+            "-lc",
+            shell_prefix
+            + "ros2 run makimate_vision face_to_maki"
         ],
         output="screen",
     )
@@ -151,4 +191,7 @@ def generate_launch_description():
         maki_behavior_awake,
         maki_dxl_node,
         maki_behavior_node,
+        camera_node,
+        face_tracker_node,     # <-- NOW CORRECT
+        face_to_maki_node,     # <-- WAS ALREADY CORRECT
     ])

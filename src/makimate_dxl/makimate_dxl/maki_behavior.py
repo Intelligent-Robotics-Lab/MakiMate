@@ -3,12 +3,21 @@
 import math
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float64MultiArray
+from std_msgs.msg import String, Float64MultiArray, Bool
 
 
 class MakiBehavior(Node):
     def __init__(self):
         super().__init__('maki_behavior')
+
+        # --- Awake state (from /maki/awake) ---
+        self.awake = False
+        self.awake_sub = self.create_subscription(
+            Bool,
+            '/maki/awake',
+            self.on_awake,
+            10
+        )
 
         # Subscriber for behavior commands
         self.behavior_sub = self.create_subscription(
@@ -28,14 +37,14 @@ class MakiBehavior(Node):
         self._timers = []
         self.phase = 0.0
 
-        # Face tracking (only for look_at_user behavior)
+        # Face tracking (for look_at_user behavior)
         self.look_at_user_enabled = False
         self.yaw_cmd = 0.0
         self.pitch_cmd = 0.0
         self.last_yaw = 0.0
         self.last_pitch = 0.0
 
-        # Subscribe to face position ONLY for look_at_user
+        # Subscribe to face position from vision pipeline
         self.face_pos_sub = self.create_subscription(
             Float64MultiArray,
             '/maki/face_pos',
@@ -44,6 +53,23 @@ class MakiBehavior(Node):
         )
 
         self.get_logger().info("MakiBehavior ready. Waiting for /maki/behavior commands.")
+
+    # ------------ AWAKE HANDLER ------------ #
+    def on_awake(self, msg: Bool):
+        """
+        Automatically toggle look-at-user tracking based on /maki/awake.
+        """
+        self.awake = msg.data
+
+        if self.awake:
+            # When we wake up, begin tracking the user
+            self.start_look_at_user()
+            self.get_logger().info("Awake -> enabling look_at_user tracking.")
+        else:
+            # When we go to sleep, stop tracking
+            if self.look_at_user_enabled:
+                self.get_logger().info("Asleep -> disabling look_at_user tracking.")
+            self.look_at_user_enabled = False
 
     # Helper to publish joint goals
     def send(self, arr):
@@ -92,6 +118,7 @@ class MakiBehavior(Node):
             self.start_big_shake_no()
 
         elif behavior == "look_at_user":
+            # Manual override if you ever want to trigger it explicitly
             self.start_look_at_user()
 
         elif behavior == "maki_stop":
@@ -133,6 +160,7 @@ class MakiBehavior(Node):
 
     def start_blink_loop(self):
         counter = {"t": 0}
+
         def step_timer():
             counter["t"] += 1
             t = counter["t"] % 60
@@ -204,8 +232,10 @@ class MakiBehavior(Node):
 
             target_eye_yaw = -1.35 * yaw
             eye_alpha = 0.35
-            eye_yaw = (eye_alpha * target_eye_yaw +
-                       (1 - eye_alpha) * state["eye_yaw"])
+            eye_yaw = (
+                eye_alpha * target_eye_yaw
+                + (1 - eye_alpha) * state["eye_yaw"]
+            )
             state["eye_yaw"] = eye_yaw
 
             state["blink_t"] += 1
@@ -232,7 +262,7 @@ class MakiBehavior(Node):
         t = self.create_timer(0.045, step_timer)
         self._timers.append(t)
 
-    # ------------ LOOK_AT_USER (manual only) ------------ #
+    # ------------ LOOK_AT_USER ------------ #
     def start_look_at_user(self):
         self.look_at_user_enabled = True
         self.yaw_cmd = self.last_yaw
@@ -258,6 +288,7 @@ class MakiBehavior(Node):
         K_YAW = 1.0
         K_PITCH = 0.8
 
+        # Note: x>0 means face is to the right → negative yaw_cmd to turn right (depending on your frame)
         self.yaw_cmd += K_YAW * (-x)
         self.pitch_cmd += K_PITCH * (-y)
 

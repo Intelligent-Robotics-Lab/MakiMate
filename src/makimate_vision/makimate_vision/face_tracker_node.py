@@ -9,22 +9,34 @@ from cv_bridge import CvBridge
 
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray, Bool
 
 import cv2
 
 
 class FaceTracker(Node):
     """
-    Subscribes to a camera image, runs face detection at a reduced rate,
-    and republishes an image with squares drawn around all detected faces.
+    Subscribes to a camera image, detects faces, and publishes:
+      - processed image with boxes
+      - largest face bbox
 
-    It also publishes the bounding box of the largest face as:
-      Int32MultiArray [x, y, w, h]
+    NOW MODIFIED:
+      - Tracking OUTPUTS only occur when /maki/awake == True
+      - When asleep, no bbox and no face_image is published
     """
 
     def __init__(self):
         super().__init__('face_tracker')
+
+        # ---- Awake flag ----
+        self.awake = False
+        self.awake_sub = self.create_subscription(
+            Bool,
+            '/maki/awake',
+            self._on_awake,
+            10
+        )
+        self.get_logger().info("FaceTracker: listening to /maki/awake")
 
         # Parameters
         self.declare_parameter('input_image_topic', '/camera/image_raw')
@@ -35,13 +47,11 @@ class FaceTracker(Node):
         )
         self.declare_parameter('show_debug_window', False)
 
-        # How often to run detection / how we speed it up
-        self.declare_parameter('detect_every_n', 5)        # detect every N frames
-        self.declare_parameter('downscale_factor', 0.3)    # 0.3–0.4 works well
-        self.declare_parameter('roi_expansion', 0.5)       # expand ROI around last face
-        self.declare_parameter('full_frame_every', 20)     # force full-frame search sometimes
+        self.declare_parameter('detect_every_n', 5)
+        self.declare_parameter('downscale_factor', 0.3)
+        self.declare_parameter('roi_expansion', 0.5)
+        self.declare_parameter('full_frame_every', 20)
 
-        # Topic for largest face bbox
         self.declare_parameter('largest_face_topic', '/maki/largest_face_bbox')
 
         self.input_topic = self.get_parameter('input_image_topic').value
@@ -82,7 +92,7 @@ class FaceTracker(Node):
                     f"Loaded face cascade from {self.cascade_path}"
                 )
 
-        # Subscriber and publisher (keep only latest frame to avoid backlog)
+        # QoS to avoid backlog
         qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.BEST_EFFORT,
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -98,22 +108,31 @@ class FaceTracker(Node):
 
         self.pub = self.create_publisher(Image, self.output_topic, 10)
 
-        # Publisher for largest face bbox [x, y, w, h]
         self.largest_face_pub = self.create_publisher(
             Int32MultiArray, self.largest_face_topic, 10
         )
 
-        self.get_logger().info(
-            f"FaceTracker listening on {self.input_topic}, "
-            f"publishing image to {self.output_topic}, "
-            f"largest face bbox to {self.largest_face_topic}. "
-            f"detect_every_n={self.detect_every_n}, "
-            f"downscale_factor={self.downscale_factor}"
-        )
+        self.get_logger().info("FaceTracker initialized.")
 
+    # --------------------------
+    #   Awake callback
+    # --------------------------
+    def _on_awake(self, msg: Bool):
+        self.awake = bool(msg.data)
+        self.get_logger().info(f"FaceTracker: awake = {self.awake}")
+
+    # --------------------------
+    #   Image callback
+    # --------------------------
     def image_callback(self, msg: Image):
         if self.face_cascade is None:
             return
+
+        # DEBUG: log first few frames
+        if self.frame_count < 10:
+            self.get_logger().info(
+                f"image_callback: frame_count={self.frame_count}, awake={self.awake}"
+            )
 
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -123,25 +142,33 @@ class FaceTracker(Node):
 
         self.frame_count += 1
 
-        # Decide whether to run detection on this frame
-        run_detection = False
-        if self.frame_count % self.detect_every_n == 0:
-            run_detection = True
-        if self.full_frame_every > 0 and self.frame_count % self.full_frame_every == 0:
-            run_detection = True
+        # Still run detection (we can disable later if you want)
+        run_detection = (
+            self.frame_count % self.detect_every_n == 0 or
+            (self.full_frame_every > 0 and self.frame_count % self.full_frame_every == 0)
+        )
 
         if run_detection:
             self.last_faces = self.detect_faces(frame)
             self.last_largest_face = self.pick_largest(self.last_faces)
 
-        # Draw all known faces
+        # --------------------------
+        # IF SLEEPING → SUPPRESS ALL OUTPUTS
+        # --------------------------
+        if not self.awake:
+            # Publish "no face" so behavior node knows not to move
+            bbox_msg = Int32MultiArray()
+            bbox_msg.data = [-1, -1, -1, -1]
+            self.largest_face_pub.publish(bbox_msg)
+            return
+
+        # --------------------------
+        # Awake → publish tracking outputs
+        # --------------------------
+
+        # Draw faces
         for (x, y, w, h) in self.last_faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-        # Optional low-latency preview
-        if self.show_debug:
-            cv2.imshow("Face Tracker", frame)
-            cv2.waitKey(1)
 
         # Publish processed image
         try:
@@ -151,41 +178,31 @@ class FaceTracker(Node):
         except Exception as e:
             self.get_logger().error(f"cv_bridge to Image failed: {e}")
 
-        # Publish largest face bbox [x, y, w, h] or [-1, -1, -1, -1] if none
+        # Publish bbox
         bbox_msg = Int32MultiArray()
         if self.last_largest_face is not None:
             x, y, w, h = self.last_largest_face
-            bbox_msg.data = [int(x), int(y), int(w), int(h)]
+            bbox_msg.data = [x, y, w, h]
         else:
             bbox_msg.data = [-1, -1, -1, -1]
         self.largest_face_pub.publish(bbox_msg)
 
-    def pick_largest(
-        self, faces: List[Tuple[int, int, int, int]]
-    ) -> Optional[Tuple[int, int, int, int]]:
+    # --------------------------
+    # Helper functions
+    # --------------------------
+    def pick_largest(self, faces):
         if not faces:
             return None
         return max(faces, key=lambda r: r[2] * r[3])
 
-    def detect_faces(self, frame) -> List[Tuple[int, int, int, int]]:
-        """
-        Detect faces and return a list of bounding boxes (x, y, w, h)
-        in original image coordinates.
-
-        Uses:
-        - ROI search around previous largest face when possible.
-        - Full-frame search periodically or when no face is known.
-        """
+    def detect_faces(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         h_img, w_img = gray.shape[:2]
-
         scale = self.downscale_factor
-        if scale <= 0.0 or scale >= 1.0:
-            scale = 0.3
 
-        faces_full: List[Tuple[int, int, int, int]] = []
+        faces_full = []
 
-        # Try ROI search if we had a face and this is not a forced full-frame scan
+        # If we have a last face, try ROI first
         use_roi = (
             self.last_largest_face is not None
             and not (self.full_frame_every > 0 and self.frame_count % self.full_frame_every == 0)
@@ -202,48 +219,35 @@ class FaceTracker(Node):
             y1 = min(h_img, y + h + expand_y)
 
             roi_gray = gray[y0:y1, x0:x1]
-            roi_small = cv2.resize(
-                roi_gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR
-            )
+            roi_small = cv2.resize(roi_gray, None, fx=scale, fy=scale)
 
             faces_roi = self.face_cascade.detectMultiScale(
-                roi_small,
-                scaleFactor=1.1,
-                minNeighbors=4,
-                minSize=(30, 30),
+                roi_small, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30)
             )
+            for fx, fy, fw, fh in faces_roi:
+                faces_full.append((
+                    int(fx / scale) + x0,
+                    int(fy / scale) + y0,
+                    int(fw / scale),
+                    int(fh / scale)
+                ))
 
-            for (fx, fy, fw, fh) in faces_roi:
-                fx_full = int(fx / scale) + x0
-                fy_full = int(fy / scale) + y0
-                fw_full = int(fw / scale)
-                fh_full = int(fh / scale)
-                faces_full.append((fx_full, fy_full, fw_full, fh_full))
-
-            # If ROI found faces, return them
             if faces_full:
                 return faces_full
 
-            # Otherwise, fall through to full-frame search
-
         # Full-frame search
-        small_gray = cv2.resize(
-            gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR
-        )
-
+        small_gray = cv2.resize(gray, None, fx=scale, fy=scale)
         faces = self.face_cascade.detectMultiScale(
-            small_gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30),
+            small_gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)
         )
 
         for (x, y, w, h) in faces:
-            x_full = int(x / scale)
-            y_full = int(y / scale)
-            w_full = int(w / scale)
-            h_full = int(h / scale)
-            faces_full.append((x_full, y_full, w_full, h_full))
+            faces_full.append((
+                int(x / scale),
+                int(y / scale),
+                int(w / scale),
+                int(h / scale)
+            ))
 
         return faces_full
 

@@ -5,13 +5,8 @@ from std_msgs.msg import String, Bool
 
 class ASRCommandRouter(Node):
     """
-    Listens to raw ASR text and:
-    - Keeps an "awake/asleep" state.
-    - Wakes up on wake_phrase when asleep.
-    - Says goodbye and goes to sleep on sleep_phrase, but only
-      AFTER TTS has finished speaking (detected via /asr/enable).
-    - Only forwards utterances to the LLM when awake.
-    - Publishes awake/asleep on /maki/awake for LED/behavior control.
+    Extended to support multiple sleep phrases
+    (e.g., 'good bye', 'goodnight', 'good night')
     """
 
     def __init__(self):
@@ -20,15 +15,16 @@ class ASRCommandRouter(Node):
         # ---- Parameters ----
         self.declare_parameter("asr_topic", "/asr/text")
         self.declare_parameter("llm_request_topic", "/llm/request")
-        self.declare_parameter("llm_response_topic", "/llm/response")  # kept for compatibility
+        self.declare_parameter("llm_response_topic", "/llm/response")
         self.declare_parameter("awake_topic", "/maki/awake")
-        self.declare_parameter("tts_topic", "/llm/stream")  # where TTS listens
+        self.declare_parameter("tts_topic", "/llm/stream")
         self.declare_parameter("asr_enable_topic", "/asr/enable")
 
+        # Wake and sleep phrases
         self.declare_parameter("wake_phrase", "hello")
         self.declare_parameter("sleep_phrase", "good bye")
         self.declare_parameter("wake_greeting",
-                               "Hello! I'm awake and ready to talk.")
+                               "Hello! I'm awake and ready to talk. My name is Maki Mate, how may I help you.")
         self.declare_parameter("sleep_farewell",
                                "Goodbye! I'm going back to sleep now.")
 
@@ -43,29 +39,35 @@ class ASRCommandRouter(Node):
         self._wake_greeting = self.get_parameter("wake_greeting").value
         self._sleep_farewell = self.get_parameter("sleep_farewell").value
 
+        # --------------------------------------------------
+        # NEW: list of phrases that put Maki to sleep
+        # --------------------------------------------------
+        self._sleep_phrases = [
+            self._sleep_phrase,
+            "goodbye",
+            "good night",
+            "goodnight",
+            "night night",
+            "good night maki",
+            "goodnight maki",
+            "good my"
+        ]
+
         # ---- Publishers ----
         self._llm_req_pub = self.create_publisher(String, llm_request_topic, 10)
         self._awake_pub = self.create_publisher(Bool, awake_topic, 10)
         self._tts_pub = self.create_publisher(String, tts_topic, 10)
 
         # ---- Subscribers ----
-        self._asr_sub = self.create_subscription(
-            String, asr_topic, self._on_asr, 10
-        )
-        self._asr_enable_sub = self.create_subscription(
-            Bool, asr_enable_topic, self._on_asr_enable, 10
-        )
+        self._asr_sub = self.create_subscription(String, asr_topic, self._on_asr, 10)
+        self._asr_enable_sub = self.create_subscription(Bool, asr_enable_topic, self._on_asr_enable, 10)
 
         # ---- State ----
         self._awake = False
-        self._pending_sleep = False  # we sent goodbye, waiting for TTS to finish
+        self._pending_sleep = False
 
         self._publish_awake(False)
-        self.get_logger().info(
-            f"ASRCommandRouter started. Initial state: asleep. "
-            f"Wake phrase='{self._wake_phrase}', sleep phrase='{self._sleep_phrase}'. "
-            f"TTS topic='{tts_topic}', ASR enable topic='{asr_enable_topic}'."
-        )
+        self.get_logger().info("ASRCommandRouter started.")
 
     # ------------------------------------------------------------------ #
     # Helpers
@@ -78,7 +80,6 @@ class ASRCommandRouter(Node):
         self.get_logger().info(f"Published awake={value}")
 
     def _speak_immediate(self, text: str):
-        """Send text directly to TTS topic (bypassing LLM)."""
         if not text:
             return
         msg = String()
@@ -103,49 +104,35 @@ class ASRCommandRouter(Node):
         # While asleep: only react to wake phrase
         if not self._awake:
             if self._wake_phrase in low:
-                self._pending_sleep = False  # cancel any old pending sleep
+                self._pending_sleep = False
                 self._publish_awake(True)
                 self._speak_immediate(self._wake_greeting)
-            else:
-                self.get_logger().info(
-                    f"Ignoring ASR while asleep: {text!r}"
-                )
             return
 
-        # If we're awake:
-        # Check sleep phrase first
-        if (self._sleep_phrase in low) or ("goodbye" in low):
-            # Send farewell, but DO NOT set awake=False yet.
+        # --------------------------------------------------
+        # NEW: Check any sleep phrase in list
+        # --------------------------------------------------
+        if any(phrase in low for phrase in self._sleep_phrases):
             self._speak_immediate(self._sleep_farewell)
             self._pending_sleep = True
             self.get_logger().info(
-                "Sleep phrase detected. Waiting for TTS to finish "
-                "(/asr_enable True) before going to sleep."
+                f"Sleep phrase detected in: {text!r}. "
+                "Waiting for ASR re-enable before sleeping."
             )
             return
 
-        # Normal conversation: forward to LLM
+        # Normal conversation
         out = String()
         out.data = text
         self._llm_req_pub.publish(out)
         self.get_logger().info("[Router->LLM] forwarded user text.")
 
     def _on_asr_enable(self, msg: Bool):
-        """
-        Watch /asr/enable. TTS/LLM will set this False while speaking
-        and back to True when done.
-
-        If we are in 'pending_sleep' mode, we only actually go to sleep
-        once /asr_enable becomes True again.
-        """
         enabled = bool(msg.data)
-        # Only care if we are waiting to sleep
         if self._pending_sleep and enabled:
-            self.get_logger().info(
-                "ASR re-enabled and pending_sleep=True -> now going to sleep."
-            )
             self._pending_sleep = False
             self._publish_awake(False)
+            self.get_logger().info("ASR re-enabled → Maki going to sleep.")
 
 
 def main(args=None):

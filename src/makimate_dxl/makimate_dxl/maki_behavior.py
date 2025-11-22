@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 
 import math
+import random
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float64MultiArray, Bool
+from std_msgs.msg import String, Float64MultiArray, Bool, Int32MultiArray
 
 
 class MakiBehavior(Node):
     def __init__(self):
         super().__init__('maki_behavior')
 
-        # --- Awake state (from /maki/awake) ---
+        # ------------------------------------------
+        # Awake state (from /maki/awake)
+        # ------------------------------------------
         self.awake = False
         self.awake_sub = self.create_subscription(
             Bool,
@@ -19,7 +22,9 @@ class MakiBehavior(Node):
             10
         )
 
-        # Subscriber for behavior commands
+        # ------------------------------------------
+        # Behavior command interface (/maki/behavior)
+        # ------------------------------------------
         self.behavior_sub = self.create_subscription(
             String,
             '/maki/behavior',
@@ -27,24 +32,49 @@ class MakiBehavior(Node):
             10
         )
 
-        # Publisher for joint goals
+        # ------------------------------------------
+        # Joint goal publisher and expression control
+        # ------------------------------------------
         self.pub = self.create_publisher(Float64MultiArray, '/maki/joint_goals', 10)
-
-        # Publisher to expression node (for maki_stop → listening)
         self.expr_pub = self.create_publisher(String, '/maki/expression', 10)
 
-        # Timer handles
+        # ------------------------------------------
+        # Timers and phase for continuous behaviors
+        # ------------------------------------------
         self._timers = []
         self.phase = 0.0
 
-        # Face tracking (for look_at_user behavior)
+        # ------------------------------------------
+        # Face tracking state (look_at_user)
+        # ------------------------------------------
         self.look_at_user_enabled = False
         self.yaw_cmd = 0.0
         self.pitch_cmd = 0.0
         self.last_yaw = 0.0
         self.last_pitch = 0.0
 
-        # Subscribe to face position from vision pipeline
+        # ------------------------------------------
+        # Search mode (randomized scanning when no face)
+        # ------------------------------------------
+        self.face_present = False
+        self.no_face_counter = 0
+
+        # Bigger threshold → longer before going into search.
+        # If /maki/largest_face_bbox is ~10–15 Hz,
+        # 90 counts ≈ 6–9 seconds with no face.
+        self.no_face_threshold = 90
+
+        self.search_mode = False
+
+        # ------------------------------------------
+        # Blink state (occasional blink every 6–12 seconds)
+        # ------------------------------------------
+        self.blink_counter = 0
+        self.blink_interval = random.randint(120, 240)  # ticks
+        self.blink_phase = 0  # 0=idle, 1=closing, 2=opening
+        self.blink_step = 0
+
+        # Subscribe to normalized face offsets
         self.face_pos_sub = self.create_subscription(
             Float64MultiArray,
             '/maki/face_pos',
@@ -52,41 +82,106 @@ class MakiBehavior(Node):
             10
         )
 
+        # Subscribe to largest face bounding box to know when no face is present
+        self.bbox_sub = self.create_subscription(
+            Int32MultiArray,
+            '/maki/largest_face_bbox',
+            self.on_largest_face_bbox,
+            10
+        )
+
         self.get_logger().info("MakiBehavior ready. Waiting for /maki/behavior commands.")
 
-    # ------------ AWAKE HANDLER ------------ #
+    # ==========================================
+    # Awake handler — auto enable/disable tracking
+    # ==========================================
     def on_awake(self, msg: Bool):
         """
-        Automatically toggle look-at-user tracking based on /maki/awake.
+        Automatically toggle behaviors based on /maki/awake.
+        When waking: start look_at_user.
+        When sleeping: stop all behaviors.
         """
         self.awake = msg.data
 
         if self.awake:
-            # When we wake up, begin tracking the user
+            self.get_logger().info("Awake -> resetting state and enabling look_at_user.")
+            self.no_face_counter = 0
+            self.face_present = False
+            self.search_mode = False
+            self.stop_all()
             self.start_look_at_user()
-            self.get_logger().info("Awake -> enabling look_at_user tracking.")
         else:
-            # When we go to sleep, stop tracking
-            if self.look_at_user_enabled:
-                self.get_logger().info("Asleep -> disabling look_at_user tracking.")
-            self.look_at_user_enabled = False
+            self.get_logger().info("Asleep -> stopping all behaviors.")
+            self.stop_all()
 
-    # Helper to publish joint goals
+    # ------------------------------------------
+    # Helper to publish joint goals (raw)
+    # ------------------------------------------
     def send(self, arr):
         msg = Float64MultiArray()
         msg.data = arr
         self.pub.publish(msg)
 
-    # Stop all active behaviors
+    # ------------------------------------------
+    # Helper: send with occasional blink overlay
+    # ------------------------------------------
+    def send_with_blink(self, yaw, pitch, eye_pitch, eye_yaw, base_lid_left, base_lid_right):
+        """
+        Wraps send() and injects a short blink (close+open) every 6–12 seconds.
+        """
+        lid_left = base_lid_left
+        lid_right = base_lid_right
+
+        # Advance blink timer
+        self.blink_counter += 1
+
+        # If idle, maybe start a blink
+        if self.blink_phase == 0:
+            if self.blink_counter >= self.blink_interval:
+                self.blink_phase = 1
+                self.blink_step = 0
+
+        # Closing phase: override lids to closed
+        if self.blink_phase == 1:
+            lid_left = -18.0
+            lid_right = 22.0
+            self.blink_step += 1
+            if self.blink_step >= 4:  # ~4 frames closed
+                self.blink_phase = 2
+                self.blink_step = 0
+
+        # Opening phase: back to base lids
+        elif self.blink_phase == 2:
+            lid_left = base_lid_left
+            lid_right = base_lid_right
+            self.blink_step += 1
+            if self.blink_step >= 4:
+                # Done blinking, reset timer + interval
+                self.blink_phase = 0
+                self.blink_step = 0
+                self.blink_counter = 0
+                self.blink_interval = random.randint(120, 240)
+
+        arr = [yaw, pitch, eye_pitch, eye_yaw, lid_left, lid_right]
+        self.send(arr)
+
+    # ------------------------------------------
+    # Stop all active behaviors and reset flags
+    # ------------------------------------------
     def stop_all(self):
         for t in self._timers:
             t.cancel()
         self._timers.clear()
         self.phase = 0.0
         self.look_at_user_enabled = False
+        self.search_mode = False
+        self.face_present = False
+        self.no_face_counter = 0
         self.get_logger().info("Stopped all behaviors.")
 
-    # Dispatcher
+    # ==========================================
+    # Behavior dispatcher — /maki/behavior commands
+    # ==========================================
     def on_behavior(self, msg: String):
         behavior = msg.data.strip().lower()
         self.get_logger().info(f"Behavior command received: {behavior!r}")
@@ -127,37 +222,94 @@ class MakiBehavior(Node):
         else:
             self.get_logger().warn(f"Unknown behavior: {behavior}")
 
-    # ============= BEHAVIORS ============= #
-
+    # ==========================================
+    # Behavior — find_me: slow left-right searching
+    # ==========================================
     def start_find_me(self):
         def step_timer():
             self.phase += 0.035
             yaw = 18.0 * math.sin(self.phase)
-            arr = [yaw, 0.0, 0.0, 0.0, 20.0, -20.0]
-            self.send(arr)
+            self.send_with_blink(yaw, 0.0, 0.0, 0.0, 20.0, -20.0)
         t = self.create_timer(0.05, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — circle_scan: randomized search mode
+    #
+    # - Picks random yaw/pitch targets
+    # - Moves toward them at random speed
+    # - Holds each pose for a random time
+    #   → creates natural "looking around" behavior
+    # ==========================================
     def start_circle_scan(self):
+        state = {
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "target_yaw": 0.0,
+            "target_pitch": 0.0,
+            "hold_ticks": 0,
+            "hold_max": 0,
+            "speed": 0.08,
+        }
+
+        def choose_new_target():
+            # Random yaw left/right and pitch up/down
+            state["target_yaw"] = random.uniform(-18.0, 18.0)
+            state["target_pitch"] = random.uniform(-6.0, 6.0)
+
+            # How long to hold once we've reached the target (in timer ticks)
+            state["hold_ticks"] = 0
+            state["hold_max"] = random.randint(10, 60)  # short to longer pauses
+
+            # How fast to move toward the new target (0.0–1.0 smoothing factor)
+            state["speed"] = random.uniform(0.06, 0.20)
+
+        choose_new_target()
+
         def step_timer():
-            self.phase += 0.05
-            yaw = 15.0 * math.sin(self.phase)
-            pitch = 8.0 * math.cos(self.phase)
-            arr = [yaw, pitch, 0.0, 0.0, 20.0, -20.0]
-            self.send(arr)
+            # Move toward the current target
+            alpha = state["speed"]
+
+            state["yaw"] += alpha * (state["target_yaw"] - state["yaw"])
+            state["pitch"] += alpha * (state["target_pitch"] - state["pitch"])
+
+            # Clamp to safe limits
+            yaw = max(-38.0, min(38.0, state["yaw"]))
+            pitch = max(-16.0, min(16.0, state["pitch"]))
+            state["yaw"] = yaw
+            state["pitch"] = pitch
+
+            # If we are close enough to the target, start counting hold time
+            if (
+                abs(state["target_yaw"] - yaw) < 1.0
+                and abs(state["target_pitch"] - pitch) < 1.0
+            ):
+                state["hold_ticks"] += 1
+                if state["hold_ticks"] >= state["hold_max"]:
+                    choose_new_target()
+
+            self.send_with_blink(yaw, pitch, 0.0, 0.0, 20.0, -20.0)
+
+        # 20 Hz-ish search timer
         t = self.create_timer(0.05, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — eye_scan: eyes sweep around
+    # ==========================================
     def start_eye_scan(self):
         def step_timer():
             self.phase += 0.08
             eye_yaw = 20.0 * math.sin(self.phase)
             eye_pitch = 5.0 * math.cos(self.phase)
-            arr = [0.0, 0.0, eye_pitch, eye_yaw, 20.0, -20.0]
-            self.send(arr)
+            self.send_with_blink(0.0, 0.0, eye_pitch, eye_yaw, 20.0, -20.0)
         t = self.create_timer(0.05, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — blink_loop: periodic blinking
+    # (keeps its own eyelid control, no extra random blink)
+    # ==========================================
     def start_blink_loop(self):
         counter = {"t": 0}
 
@@ -177,6 +329,9 @@ class MakiBehavior(Node):
         t = self.create_timer(0.05, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — idle_breathe: subtle breathing motion
+    # ==========================================
     def start_idle_breathe(self):
         def step_timer():
             self.phase += 0.015
@@ -184,32 +339,38 @@ class MakiBehavior(Node):
             flutter = 6.0 * math.sin(self.phase * 0.7)
             left_lid = 20.0 + flutter
             right_lid = -20.0 - flutter
-            arr = [0.0, pitch, 0.0, 0.0, left_lid, right_lid]
-            self.send(arr)
+            self.send_with_blink(0.0, pitch, 0.0, 0.0, left_lid, right_lid)
         t = self.create_timer(0.04, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — nod_yes: nodding motion
+    # ==========================================
     def start_nod_yes(self):
         def step_timer():
             self.phase += 0.10
             pitch = -10.0 * math.cos(self.phase)
-            arr = [0.0, pitch, 0.0, 0.0, 16.0, -16.0]
-            self.send(arr)
+            self.send_with_blink(0.0, pitch, 0.0, 0.0, 16.0, -16.0)
         t = self.create_timer(0.03, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — calm_shake_no: gentle shake of head
+    # ==========================================
     def start_calm_shake_no(self):
         def step_timer():
             self.phase += 0.055
             yaw = 9.0 * math.sin(self.phase)
             eye_yaw = -yaw
-            arr = [yaw, 0.0, 0.0, eye_yaw, 20.0, -20.0]
-            self.send(arr)
+            self.send_with_blink(yaw, 0.0, 0.0, eye_yaw, 20.0, -20.0)
         t = self.create_timer(0.04, step_timer)
         self._timers.append(t)
 
+    # ==========================================
+    # Behavior — big_shake_no: larger no motion + blinks
+    # (has its own blink logic already)
+    # ==========================================
     def start_big_shake_no(self):
-        import random
         state = {
             "yaw": 0.0,
             "target": 12.0,
@@ -262,7 +423,9 @@ class MakiBehavior(Node):
         t = self.create_timer(0.045, step_timer)
         self._timers.append(t)
 
-    # ------------ LOOK_AT_USER ------------ #
+    # ==========================================
+    # Behavior — look_at_user: track face from /maki/face_pos
+    # ==========================================
     def start_look_at_user(self):
         self.look_at_user_enabled = True
         self.yaw_cmd = self.last_yaw
@@ -288,7 +451,7 @@ class MakiBehavior(Node):
         K_YAW = 1.0
         K_PITCH = 0.8
 
-        # Note: x>0 means face is to the right → negative yaw_cmd to turn right (depending on your frame)
+        # x>0 → face right; y>0 → face up (depending on camera frame)
         self.yaw_cmd += K_YAW * (-x)
         self.pitch_cmd += K_PITCH * (-y)
 
@@ -298,8 +461,55 @@ class MakiBehavior(Node):
         self.last_yaw = self.yaw_cmd
         self.last_pitch = self.pitch_cmd
 
-        arr = [self.yaw_cmd, self.pitch_cmd, 0.0, 0.0, 20.0, -20.0]
-        self.send(arr)
+        self.send_with_blink(self.yaw_cmd, self.pitch_cmd, 0.0, 0.0, 20.0, -20.0)
+
+    # ==========================================
+    # Auto search controller — uses largest_face_bbox
+    # - If no face for a while → circle_scan (random search)
+    # - If face appears → look_at_user
+    # ==========================================
+    def on_largest_face_bbox(self, msg: Int32MultiArray):
+        # Only care when awake
+        if not self.awake:
+            return
+
+        data = list(msg.data)
+        if len(data) < 4:
+            return
+
+        x, y, w, h = data[0], data[1], data[2], data[3]
+
+        # No face detected: tracker publishes [-1, -1, -1, -1]
+        if x < 0 or y < 0 or w <= 0 or h <= 0:
+            self.no_face_counter += 1
+
+            if (
+                self.no_face_counter >= self.no_face_threshold
+                and not self.search_mode
+            ):
+                self.get_logger().info(
+                    "No face detected for a while → entering randomized search mode (circle_scan)."
+                )
+                self.stop_all()
+                self.search_mode = True
+                self.start_circle_scan()
+            return
+
+        # Face detected
+        self.face_present = True
+        self.no_face_counter = 0
+
+        # If we were searching, switch back to tracking
+        if self.search_mode:
+            self.get_logger().info(
+                "Face detected while searching → switching to look_at_user."
+            )
+            self.stop_all()
+            self.search_mode = False
+            self.start_look_at_user()
+        else:
+            # Already in tracking mode (or other behavior); make sure tracking is allowed
+            self.look_at_user_enabled = True
 
 
 def main(args=None):

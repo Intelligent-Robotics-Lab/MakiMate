@@ -30,7 +30,7 @@ class MakiExpressions(Node):
             'expression_file',
             # default path – change if you move the yaml
             os.path.expanduser(
-                '~/MakiMate_ws/src/makimate_dxl/makimate_dxl/expressions.yaml'
+                '~/MakiMate/src/makimate_dxl/makimate_dxl/expressions.yaml'
             )
         )
         self.declare_parameter('expression_topic', '/maki/expression')

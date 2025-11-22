@@ -26,6 +26,9 @@ setup(
         'console_scripts': [
             'maki_operational_modes = maki_operational_nodes.maki_operational_modes:main',
             'maki_launch_manager = maki_operational_nodes.maki_launch_manager:main',
+
+            # NEW: expression behavior bridge for presentation mode
+            'maki_awake_behavior = maki_operational_nodes.maki_awake_behavior:main',
         ],
     },
 )

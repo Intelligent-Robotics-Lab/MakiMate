@@ -180,8 +180,22 @@ class NaturalTTS(Node):
                 "''",
             }
 
+            def is_apostrophe_clitic(tok: str) -> bool:
+                """
+                True for things like "'t", "'s", "’t", "’s" that should attach
+                to the previous word with no space.
+                """
+                if len(tok) < 2:
+                    return False
+                if tok[0] in {"'", "’"} and tok[1].isalpha():
+                    return True
+                return False
+
             if stripped in punct_tokens:
                 # Attach punctuation directly to previous text, no preceding space
+                self._buffer = self._buffer.rstrip() + stripped
+            elif is_apostrophe_clitic(stripped) and self._buffer:
+                # Attach contractions like "'t", "'s" to the previous word
                 self._buffer = self._buffer.rstrip() + stripped
             else:
                 # Normal word-ish chunk: ensure exactly one space before it
@@ -200,6 +214,7 @@ class NaturalTTS(Node):
             # Mark TTS activity when we enqueue this
             self._last_tts_activity_time = time.time()
             self._queue.put(to_speak)
+
 
     def _pop_flush_segment_locked(self) -> str:
         """

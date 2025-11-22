@@ -2,7 +2,7 @@
 
 # Simple helper to start all main Maki nodes in separate terminals.
 
-WS=~/MakiMate_ws
+WS=~/MakiMate
 ROS_SETUP="source /opt/ros/jazzy/setup.bash"
 WS_SETUP="cd $WS && source install/setup.bash"
 

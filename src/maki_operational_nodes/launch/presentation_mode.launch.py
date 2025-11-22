@@ -34,7 +34,7 @@ def generate_launch_description():
             "bash",
             "-lc",
             shell_prefix
-            + "ros2 run makimate_asr asr_command_router "
+            + "ros2 run makimate_asr ai_command_router "
               "--ros-args "
               "-p asr_topic:=/asr/text "
               "-p llm_request_topic:=/llm/request "

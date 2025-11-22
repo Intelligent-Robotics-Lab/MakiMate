@@ -10,7 +10,7 @@ class ASRCommandRouter(Node):
     """
 
     def __init__(self):
-        super().__init__("asr_command_router")
+        super().__init__("ai_command_router")
 
         # ---- Parameters ----
         self.declare_parameter("asr_topic", "/asr/text")

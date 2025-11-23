@@ -1,0 +1,20 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Piper binary runtime (ignore all compiled stuff)
+piper_bin/*
+
+# But keep these:
+!piper_bin/.gitkeep
+!piper_bin/piper_src/
+!piper_bin/build.sh
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Editor folders
+.vscode/
+.idea/

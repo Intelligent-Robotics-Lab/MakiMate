@@ -1,0 +1,13 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Piper runtime directory: ignore everything inside...
+piper_bin/*
+
+# ...except these files, which we DO want in git:
+!piper_bin/.gitkeep
+!piper_bin/piper_linux_aarch64.tar.gz
+!piper_bin/install_piper.sh
+

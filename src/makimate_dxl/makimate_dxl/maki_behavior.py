@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 import math
 import random
 import rclpy
@@ -10,6 +11,13 @@ from std_msgs.msg import String, Float64MultiArray, Bool, Int32MultiArray
 class MakiBehavior(Node):
     def __init__(self):
         super().__init__('maki_behavior')
+
+        # ------------------------------------------
+        # Mode-specific options
+        # ------------------------------------------
+        self.declare_parameter('enable_monologue', False)
+        self.enable_monologue = bool(self.get_parameter('enable_monologue').value)
+        self.get_logger().info(f"Monologue enabled: {self.enable_monologue}")
 
         # ------------------------------------------
         # Awake state (from /maki/awake)
@@ -74,6 +82,16 @@ class MakiBehavior(Node):
         self.blink_phase = 0  # 0=idle, 1=closing, 2=opening
         self.blink_step = 0
 
+        # ------------------------------------------
+        # Monologue / face-lock state
+        # ------------------------------------------
+        self.face_lock_active = False
+        self.face_lock_start = 0.0
+        self.monologue_spoken = False
+
+        # TTS publisher (natural_tts listens on /llm/stream)
+        self.tts_pub = self.create_publisher(String, '/llm/stream', 10)
+
         # Subscribe to normalized face offsets
         self.face_pos_sub = self.create_subscription(
             Float64MultiArray,
@@ -98,10 +116,19 @@ class MakiBehavior(Node):
     def on_awake(self, msg: Bool):
         """
         Automatically toggle behaviors based on /maki/awake.
-        When waking: start look_at_user.
-        When sleeping: stop all behaviors.
+
+        IMPORTANT:
+        - Only react when the awake state actually changes.
+        - This avoids resetting behaviors every time a True is republished
+          (e.g. in demo mode where /maki/awake is sent at 1 Hz).
         """
-        self.awake = msg.data
+        new_state = bool(msg.data)
+
+        # If nothing changed (True->True or False->False), ignore.
+        if new_state == self.awake:
+            return
+
+        self.awake = new_state
 
         if self.awake:
             self.get_logger().info("Awake -> resetting state and enabling look_at_user.")
@@ -177,6 +204,12 @@ class MakiBehavior(Node):
         self.search_mode = False
         self.face_present = False
         self.no_face_counter = 0
+
+        # reset monologue/lock state
+        self.face_lock_active = False
+        self.monologue_spoken = False
+        self.face_lock_start = 0.0
+
         self.get_logger().info("Stopped all behaviors.")
 
     # ==========================================
@@ -483,6 +516,11 @@ class MakiBehavior(Node):
         if x < 0 or y < 0 or w <= 0 or h <= 0:
             self.no_face_counter += 1
 
+            # Lose lock whenever face disappears
+            self.face_lock_active = False
+            self.monologue_spoken = False
+            self.face_lock_start = 0.0
+
             if (
                 self.no_face_counter >= self.no_face_threshold
                 and not self.search_mode
@@ -495,9 +533,38 @@ class MakiBehavior(Node):
                 self.start_circle_scan()
             return
 
-        # Face detected
-        self.face_present = True
+        # Reset counter when face is present
         self.no_face_counter = 0
+
+        # ---------------------------
+        # Face lock / monologue logic
+        # ---------------------------
+        now = time.time()
+
+        if not self.face_lock_active:
+            # First frame seeing a face in this session
+            self.face_lock_active = True
+            self.face_lock_start = now
+            self.monologue_spoken = False
+        else:
+            # Face has been present across frames
+            if (
+                self.enable_monologue and          # <-- only if enabled
+                not self.monologue_spoken and
+                self.look_at_user_enabled and
+                (now - self.face_lock_start) >= 6.0
+            ):
+                # Trigger monologue once per continuous face session
+                tts_msg = String()
+                tts_msg.data = (
+                    "Hello there! I am Maki Mate. I am a socially interactive robot "
+                    "designed to engage with people through conversation and expressions "
+                    "to help engineering students. My body may be plastic, but I have a heart of gold. "
+                    "It is very nice to meet you!"
+                )
+                self.tts_pub.publish(tts_msg)
+                self.get_logger().info("Monologue triggered: Hello, I am Maki Mate.")
+                self.monologue_spoken = True
 
         # If we were searching, switch back to tracking
         if self.search_mode:

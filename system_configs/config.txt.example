@@ -1,0 +1,50 @@
+[all]
+arm_64bit=1
+kernel=vmlinuz
+cmdline=cmdline.txt
+initramfs initrd.img followkernel
+
+disable_overscan=1
+
+# Core hardware interfaces
+dtparam=audio=on
+dtparam=i2c_arm=on
+dtparam=spi=on
+
+# -----------------------------------------------------
+# CAMERA: Raspberry Pi Camera v3 (IMX708)
+# -----------------------------------------------------
+start_x=1
+gpu_mem=128
+camera_auto_detect=0
+dtoverlay=imx708,cam0
+
+
+# -----------------------------------------------------
+# Graphics / Display
+# vc4-kms-v3d is correct for Ubuntu on Pi 5.
+# disable_fw_kms_setup=1 prevents firmware override.
+# -----------------------------------------------------
+dtoverlay=vc4-kms-v3d
+disable_fw_kms_setup=1
+display_auto_detect=1
+
+# USB OTG
+dtoverlay=dwc2
+
+# -----------------------------------------------------
+# Device-specific sections preserved from your original
+# -----------------------------------------------------
+
+[pi4]
+max_framebuffers=2
+arm_boost=1
+
+[pi3+]
+dtoverlay=vc4-kms-v3d,cma-128
+
+[pi02]
+dtoverlay=vc4-kms-v3d,cma-128
+
+[cm4]
+dtoverlay=dwc2,dr_mode=host

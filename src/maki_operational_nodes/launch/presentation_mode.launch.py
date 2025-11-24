@@ -18,7 +18,7 @@ def generate_launch_description():
             + "python -m makimate_asr.respeaker_vosk_asr "
               "--ros-args "
               "-p sample_rate:=16000.0 "
-              "-p device:=6 "
+              "-p device:=3 "
               "-p model_path:=/home/makimate/vosk_models/vosk-model-small-en-us-0.15 "
               "-p publish_llm:=false "
               "-p asr_topic:=/asr/text "
@@ -130,13 +130,15 @@ def generate_launch_description():
         output="screen",
     )
 
-    # 9) Higher-level behavior
+    # 9) Higher-level behavior (monologue disabled in presentation)
     maki_behavior_node = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
-            + "ros2 run makimate_dxl maki_behavior"
+            + "ros2 run makimate_dxl maki_behavior "
+              "--ros-args "
+              "-p enable_monologue:=false"
         ],
         output="screen",
     )
@@ -159,7 +161,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # 11) Face tracker (THIS WAS BROKEN — FIXED HERE)
+    # 11) Face tracker
     face_tracker_node = ExecuteProcess(
         cmd=[
             "bash",
@@ -192,6 +194,6 @@ def generate_launch_description():
         maki_dxl_node,
         maki_behavior_node,
         camera_node,
-        face_tracker_node,     # <-- NOW CORRECT
-        face_to_maki_node,     # <-- WAS ALREADY CORRECT
+        face_tracker_node,
+        face_to_maki_node,
     ])

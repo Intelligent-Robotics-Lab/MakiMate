@@ -9,14 +9,20 @@ def generate_launch_description():
         "source ~/MakiMate/install/setup.bash && "
     )
 
-    # 1) Camera: camera_ros pipeline
-    #    (preview disabled inside camera.launch.py by removing ImageView)
+    # 1) Camera: headless camera_ros node (NO image_view / Qt)
     camera = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
-            + "ros2 launch camera_ros camera.launch.py",
+            + "ros2 run camera_ros camera_node "
+              "--ros-args "
+              "-p camera:=0 "
+              "-p role:=video "
+              "-p sensor_mode:='640:480' "
+              "-p width:=640 "
+              "-p height:=480 "
+              "-p format:=BGR888 "
         ],
         output="screen",
     )
@@ -63,25 +69,42 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Enable monologue only in demo mode
     behavior = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
-            + "ros2 run makimate_dxl maki_behavior",
+            + "ros2 run makimate_dxl maki_behavior "
+              "--ros-args "
+              "-p enable_monologue:=true"
         ],
         output="screen",
     )
 
-    # 4) Fake the "awake" signals like the command router would
-    #    /maki/awake := True
-    set_awake_true = ExecuteProcess(
+    # 4) TTS: Piper on /llm/stream (monologue output)
+    tts_node = ExecuteProcess(
+        cmd=[
+            "bash",
+            "-lc",
+            shell_prefix
+            + "ros2 run makimate_asr natural_tts_node "
+              "--ros-args "
+              "-p backend:=piper_python "
+              "-p piper_model:=/home/makimate/MakiMate/piper_models/en_US-john-medium.onnx "
+              "-p input_topic:=/llm/stream"
+        ],
+        output="screen",
+    )
+
+    # 5) Keep Maki awake in demo mode
+    awake_publisher = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
             + "sleep 2 && "
-              "ros2 topic pub --once /maki/awake std_msgs/msg/Bool \"data: true\"",
+              "ros2 topic pub /maki/awake std_msgs/msg/Bool \"data: true\" -r 1.0",
         ],
         output="screen",
     )
@@ -92,37 +115,33 @@ def generate_launch_description():
             "bash",
             "-lc",
             shell_prefix
-            + "sleep 3 && "
+            + "sleep 4 && "
               "ros2 topic pub --once /maki/expression std_msgs/msg/String \"data: 'wide_awake'\"",
         ],
         output="screen",
     )
 
-    # 5) Spoof /maki/behavior so maki_behavior switches into
-    #    the face-follow state instead of just idle scanning.
-    #
-    # IMPORTANT: the string below ("face_follow") is a best guess.
-    # For a perfect match, see the note after this file.
+    # 6) Behavior mode: start in look_at_user so that:
+    #    - when no face: randomized search (circle_scan) kicks in
+    #    - when a face is found and locked for 3s: monologue is triggered
     behavior_mode = ExecuteProcess(
         cmd=[
             "bash",
             "-lc",
             shell_prefix
-            + "sleep 4 && "
+            + "sleep 5 && "
               "ros2 topic pub --once /maki/behavior std_msgs/msg/String "
-              "\"data: 'face_follow'\"",
+              "\"data: 'look_at_user'\"",
         ],
         output="screen",
     )
-
-    # NOTE: No ASR / TTS / LLM / command router here on purpose.
 
     return LaunchDescription(
         [
             LogInfo(
                 msg=(
                     "Starting Maki DEMO MODE "
-                    "(no AI, starts awake, face tracking + idle scan)."
+                    "(face tracking + randomized search + voice monologue)."
                 )
             ),
             camera,
@@ -131,7 +150,8 @@ def generate_launch_description():
             dxl_hw,
             expressions,
             behavior,
-            set_awake_true,
+            tts_node,
+            awake_publisher,
             wake_expression,
             behavior_mode,
         ]

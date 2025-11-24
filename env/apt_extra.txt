@@ -1,0 +1,56 @@
+# Core dev tools
+build-essential
+cmake
+meson
+ninja-build
+git
+gh
+curl
+wget
+tmux
+vim
+htop
+tree
+ripgrep
+
+# Docker (for LLM / dev)
+docker-ce
+docker-ce-cli
+docker-buildx-plugin
+docker-compose-plugin
+containerd.io
+
+# Audio / TTS / mic
+portaudio19-dev
+libportaudio2
+pavucontrol
+espeak-ng
+ffmpeg
+
+# Camera / vision utilities
+v4l-utils
+python3-opencv
+
+# Hardware utilities
+i2c-tools
+v4l-utils
+usbutils
+
+# ROS tooling (if not already covered via rosdep + meta-packages)
+ros-jazzy-desktop
+ros-jazzy-dynamixel-sdk
+ros-jazzy-camera-info-manager
+ros-jazzy-image-tools
+ros-jazzy-image-view
+ros-jazzy-rqt
+ros-jazzy-rqt-image-view
+python3-rosdep
+python3-colcon-meson
+colcon
+
+# TTS / audio helpers
+piper
+
+# Desktop niceties (optional)
+pavucontrol
+

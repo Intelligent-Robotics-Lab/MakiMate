@@ -1,3 +1,5 @@
+# *** THIS NODE HAS BEEN OBSOLETED ***
+
 import queue
 import threading
 import time

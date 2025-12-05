@@ -122,6 +122,13 @@ class NaturalTTS(Node):
         # - idle time before flushing leftover at end of answer
         self._idle_flush_seconds = 0.5
 
+        # NEW: first-sentence & grouping behavior
+        # Track whether we've already sent the first sentence for this answer.
+        self._first_sentence_sent = False
+        # After the first sentence, how many sentences per chunk?
+        # You can change this number (e.g., 2 or 3).
+        self._sentences_per_chunk_after_first = 3
+
         # Timer to flush after idle (LLM-side)
         self._buffer_timer = self.create_timer(
             0.2, self._buffer_flush_timer_cb
@@ -222,11 +229,12 @@ class NaturalTTS(Node):
         return that part and keep the remainder in the buffer.
 
         Rules:
+        - The very first complete sentence of an answer is flushed by itself,
+          as soon as we see a sentence boundary ('.', '!', '?').
+        - After that, we flush groups of N sentences at a time, where N is
+          _sentences_per_chunk_after_first, when we have enough words.
         - If buffer has fewer than _flush_min_words and is not too large,
           do nothing (return "").
-        - If buffer has >= _flush_min_words and contains a sentence end
-          ('.', '!', '?'), flush up to the LAST such punctuation and keep
-          the rest.
         - If buffer grows beyond hard limits (words or chars), flush all.
         """
         if not self._buffer:
@@ -241,21 +249,42 @@ class NaturalTTS(Node):
         if word_count >= self._flush_hard_max_words or char_count >= self._flush_max_chars:
             phrase = buf.strip()
             self._buffer = ""
+            # After this, we consider the first sentence "sent"
+            self._first_sentence_sent = True
             return phrase
 
-        # Normal sentence-based flushing
-        if word_count >= self._flush_min_words:
-            last_dot = buf.rfind(".")
-            last_ex = buf.rfind("!")
-            last_qm = buf.rfind("?")
-            last_pos = max(last_dot, last_ex, last_qm)
+        # Find all sentence boundaries
+        sentence_end_positions = []
+        for i, ch in enumerate(buf):
+            if ch in {".", "!", "?"}:
+                sentence_end_positions.append(i)
 
-            if last_pos != -1:
-                # Flush up to the last sentence-ending punctuation
-                phrase = buf[: last_pos + 1].strip()
-                remainder = buf[last_pos + 1 :].lstrip()
-                self._buffer = remainder
-                return phrase
+        # If we have at least one sentence boundary and haven't sent the first
+        # sentence yet, flush JUST the first sentence immediately, regardless
+        # of _flush_min_words.
+        if not self._first_sentence_sent and sentence_end_positions:
+            first_pos = sentence_end_positions[0]
+            phrase = buf[: first_pos + 1].strip()
+            remainder = buf[first_pos + 1 :].lstrip()
+            self._buffer = remainder
+            self._first_sentence_sent = True
+            return phrase
+
+        # Normal sentence-based flushing (after the first sentence)
+        if word_count >= self._flush_min_words and sentence_end_positions:
+            # Decide up to which sentence we flush:
+            # - if we have at least _sentences_per_chunk_after_first sentences,
+            #   flush up to that many sentences
+            # - otherwise, flush up to the last available sentence
+            if len(sentence_end_positions) >= self._sentences_per_chunk_after_first:
+                cutoff_pos = sentence_end_positions[self._sentences_per_chunk_after_first - 1]
+            else:
+                cutoff_pos = sentence_end_positions[-1]
+
+            phrase = buf[: cutoff_pos + 1].strip()
+            remainder = buf[cutoff_pos + 1 :].lstrip()
+            self._buffer = remainder
+            return phrase
 
         # Not enough words yet, or no sentence boundary found
         return ""
@@ -278,6 +307,9 @@ class NaturalTTS(Node):
                 # meet the min-word / sentence boundary rule.
                 to_speak = self._buffer.strip()
                 self._buffer = ""
+                # Reset for the next answer so its first sentence is again
+                # spoken alone.
+                self._first_sentence_sent = False
 
         if to_speak:
             self.get_logger().info(

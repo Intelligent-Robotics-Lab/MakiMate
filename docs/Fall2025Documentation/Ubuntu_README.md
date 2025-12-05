@@ -345,8 +345,5 @@ Use any VNC client (RealVNC, Remmina)
 ## 🧭 Navigation
 
 🔙 Back to Main Documentation  
-➡️ [`../../README.md`](../../README.md)
+➡️ [`../../README.md`](Overall_README.md)
 
----
-
-© 2025 MakiMate Senior Design Team — All Rights Reserved.

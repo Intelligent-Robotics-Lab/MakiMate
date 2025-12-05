@@ -12,6 +12,10 @@ This documentation serves as the centralized hub for system installation, hardwa
 
 Select one of the following to explore the respective documentation:
 
+### 0️⃣ BOM
+BOM for each subsystem  
+➡️ [`BOM_README.md`](BOM_README.md)
+
 ### 1️⃣ Ubuntu Setup
 Operating system setup, development dependencies, package management  
 ➡️ [`Ubuntu_README.md`](Ubuntu_README.md)
@@ -45,6 +49,7 @@ Walkthrough guide on how to get the project running on a new Pi from start to fi
 |-docs
 ├── CONTRIBUTION_GUIDE.md
 ├── Fall 2025 Documentation
+│   └── BOM_README.md
 │   └── Overall_README.md <----(THIS FILE)
 │   └── Drivers_Firmware_README.md
 │   └── ROS2_README.md

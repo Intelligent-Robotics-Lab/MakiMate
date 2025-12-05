@@ -33,7 +33,7 @@ Walkthrough on how to open the local LLM on the laptop for the AI functionality
 ➡️ [`LLM_Hosting_README.md`](LLM_Hosting_README.md)
 
 ### 4️⃣ Electrical Hardware
-PCB schematics, wiring diagrams, component specifications, power systems  
+Wiring diagrams, component specifications, power systems  
 ➡️ [`Electrical_README.md`](Electrical_README.md)
 
 ### 5️⃣ Mechanical Hardware

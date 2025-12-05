@@ -41,7 +41,7 @@ Install all heat-set inserts *before* mechanical assembly.
 
 ---
 
-# 2. Installing Heat-Set Inserts (Required Skill)
+# 2. Installing Heat-Set Inserts
 
 All threaded connections use **M3-0.5 brass heat-set inserts**.
 

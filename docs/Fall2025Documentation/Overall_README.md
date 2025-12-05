@@ -14,7 +14,7 @@ Select one of the following to explore the respective documentation:
 
 ### 1️⃣ Ubuntu Setup
 Operating system setup, development dependencies, package management  
-➡️ [`Ubuntu_README.md`](docs/Fall2025Documentation/Ubuntu_README.md)
+➡️ [`Ubuntu_README.md`](Ubuntu_README.md)
 
 ### 2️⃣ Drivers & Firmware
 Dynamixel servo control, sensor interfaces, and microcontroller firmware  

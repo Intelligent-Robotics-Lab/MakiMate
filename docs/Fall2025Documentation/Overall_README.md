@@ -32,6 +32,10 @@ PCB schematics, wiring diagrams, component specifications, power systems
 CAD models, assembly instructions, mounting solutions, and part details  
 ➡️ [`Hardware_README.md`](Hardware_README.md)
 
+### 6️⃣ New PI Setup
+Walkthrough guide on how to get the project running on a new Pi from start to finish  
+➡️ [`Startup_README.md`](Startup_README.md).
+
 ---
 
 ## 🧩 Repository Structure
@@ -46,6 +50,7 @@ CAD models, assembly instructions, mounting solutions, and part details
 │   └── ROS2_README.md
 │   └── Electrical_README.md
 │   └── Hardware_README.md
+│   └── Startup_README.md
 ├── SETUP_LINUX.md
 ├── SETUP_MACOS.md
 └── SETUP_WINDOWS.md

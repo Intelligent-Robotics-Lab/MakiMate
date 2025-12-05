@@ -41,7 +41,7 @@ CAD models, assembly instructions, mounting solutions, and part details
 |-docs
 ├── CONTRIBUTION_GUIDE.md
 ├── Fall 2025 Documentation
-│   └── Overall_README.md
+│   └── Overall_README.md <----(THIS FILE)
 ├── SETUP_LINUX.md
 ├── SETUP_MACOS.md
 └── SETUP_WINDOWS.md

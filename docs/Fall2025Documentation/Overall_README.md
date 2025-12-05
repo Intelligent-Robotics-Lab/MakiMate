@@ -112,3 +112,10 @@ Walkthrough guide on how to get the project running on a new Pi from start to fi
 
 Senior Design — Class of Fall 2025  
 Faculty Advisor: *Dr. Geoffrey Louie*
+
+---
+
+## 🧭 Navigation
+
+🔙 Back to Main Documentation  
+➡️ [`../../README.md`](../../README.md)

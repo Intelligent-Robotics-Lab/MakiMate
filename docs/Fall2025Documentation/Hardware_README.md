@@ -1,289 +1,415 @@
-📦 Required Insert Quantities Per Part
-Use the counts below when preparing 3D-printed pieces. All inserts are M3-0.5.
-Part
-Qty
-Rear Head Mount 2 L
-8
-Eye 1 (x2)
-2
-Neck 2 + Neck Servo Mount
-8
-Eye Servo Mount, Eye UD Mount 1, Eye Pitch Arm
-2
-Rear Head Mount
-18
-Eye Servo Mount + Eyelid Servo Control Arm R
-3
-Neck Cover Front
-4
-Eyelid Servo Control Arm L
-1
-Camera Mount
-1
-Lower Mount Eyes
-2
-Top Eye Lid L + Eyelid Control Arm L
-2
-Top Eye Lid R + Eyelid Control Arm R
-2
-Torso Base Mount 2
-15
-AIY Microphone Mount 1
-4
-Face 1
-4
-Lower Head 1
-8
-Base Top 1 + Base Bttm 1
-10
-Ear 1 (x2)
-8
+# Mechanical_README.md
 
+This document explains **all mechanical aspects of assembling MakiMate**, including:
 
+* Required **3D-printed parts** and **M3 heat-set insert counts**
+* How to properly **install brass threaded inserts** using a soldering iron
+* Mechanical assembly of the **neck, eyes, head, and body**
+* **Preparing all Dynamixel motors** (ID assignment, labeling, zeroing)
+* **3D-printing troubleshooting** (PLA only)
+* Reference to the full MAKI assembly guide (Hello-Robo)
 
+For the full legacy MAKI assembly photos and tutorials:
+➡️ [https://www.hello-robo.com/tutorials](https://www.hello-robo.com/tutorials)
 
+---
 
-General Notes
-3D print tolerances vary between machines and materials. Expect to perform minor adjustments such as sanding, drilling, deburring, or heat-fitting to achieve smooth motion and proper alignment.
+# 1. Required Inserts Per 3D-Printed Part (All M3-0.5)
 
+Install all heat-set inserts *before* mechanical assembly.
 
-The Google AIY Voice Kit was not used, as it has been discontinued. Any related steps in the original tutorial were omitted or replaced with alternative components.
+| Part                                           | Qty |
+| ---------------------------------------------- | --- |
+| Rear Head Mount 2 L                            | 8   |
+| Eye 1 (x2)                                     | 2   |
+| Neck 2 + Neck Servo Mount                      | 8   |
+| Eye Servo Mount, Eye UD Mount 1, Eye Pitch Arm | 2   |
+| Rear Head Mount                                | 18  |
+| Eye Servo Mount + Eyelid Servo Control Arm R   | 3   |
+| Neck Cover Front                               | 4   |
+| Eyelid Servo Control Arm L                     | 1   |
+| Camera Mount                                   | 1   |
+| Lower Mount Eyes                               | 2   |
+| Top Eye Lid L + Eyelid Control Arm L           | 2   |
+| Top Eye Lid R + Eyelid Control Arm R           | 2   |
+| Torso Base Mount 2                             | 15  |
+| AIY Microphone Mount 1                         | 4   |
+| Face 1                                         | 4   |
+| Lower Head 1                                   | 8   |
+| Base Top 1 + Base Bottom 1                     | 10  |
+| Ear 1 (x2)                                     | 8   |
 
+---
 
-All assembly instructions are based on the original MAKI tutorial available at:
- https://www.hello-robo.com/tutorials
+# 2. Installing Heat-Set Inserts (Required Skill)
 
+All threaded connections use **M3-0.5 brass heat-set inserts**.
 
-Several updates were made compared to the original tutorial to match the implemented robot:
+## 2.1 Tools Needed
 
+* Soldering iron (set to **180–220°C / 350–425°F**)
+* Heat-set insert tip **or** flat chisel-style tip
+* Tweezers or pliers
+* Printed part with correctly sized insert holes
 
-A Raspberry Pi 5 is used instead of older Pi models.
+## 2.2 Installation Procedure
 
+### **Step 1 — Heat the Insert**
 
-No AIY kit or AIY microphone board is included.
+* Use tweezers to hold the brass insert.
+* Touch it to the soldering iron tip until the brass begins to warm (1–2 seconds).
 
+### **Step 2 — Place Insert in Printed Hole**
 
-A custom USB-powered speaker replaces the AIY audio hardware.
+* Align the insert over the 3D-printed recess.
+* Press lightly with the soldering iron tip.
 
+### **Step 3 — Melt Insert Into the PLA**
 
-The SD card extension adapter is not used, as it did not function properly
+* Slowly press the insert down, allowing it to **sink evenly** into the print.
+* Do NOT force it; the PLA should melt, not deform from pressure.
 
+### **Step 4 — Stop When Flush**
 
-🦴 NECK ASSEMBLY
-General Tips:
-Ensure all servos are centered/zeroed before installing.
+* Remove heat and let the insert cool in place.
+* The insert should be:
 
+  * perfectly **flush with the top**, and
+  * **perpendicular** to the surface.
 
-Fit varies by printer; sanding may be required.
+### **Step 5 — Reinforce (Optional)**
 
+If the fit is slightly loose:
 
-Deburring helps any rotating surfaces move smoothly.
+* Add a tiny amount of melted PLA by lightly reheating the top edge.
 
+### ✔️ A properly installed insert:
 
+* Does not spin
+* Is flush with the surface
+* Accepts an M3 screw smoothly
 
-Step 1 — Initial Neck Assembly
-Parts:
- Neck Cover 1, Neck Servo Mount, 2× Neck Spacers, XL430 Servo (ID 1), X3P Cable, X3P Convertible Cable
+### ❌ A bad insert installation:
 
-Tips:
- Laser-cut or CNC neck spacers (Delrin/Acetal) give the best fit. 3D-printed spacers work but are less consistent.
+* Sits crooked
+* Melts through the print
+* Spins when tightening a screw
 
-Step 2 — Neck 1 and Servo ID 2
-Install the XL430 Servo (ID 2) to Neck 1.
-Tips:
- Remove the four back screws, insert the included servo spacers, then attach to Neck 1.
+If this happens, reheat the area and adjust or reprint the part.
 
+---
 
-Step 3 — Combine Step 1 + Step 2
-Add Neck 2 and route the Raspberry Pi ribbon cable.
-Tips:
- Route servo wires to the sides. Keep the ribbon on the left side.
+# 3. General Mechanical Notes
 
+### ✔️ Use **PLA only**
 
-Step 4 — Add Neck Head Mount L
-Attach to the previous assembly.
-Tips:
- Depending on tolerances, you may need to tap the holes for smooth bolt insertion.
+* MAKI tolerances are designed for PLA stiffness.
+* PETG / ABS change dimensions and often cause binding.
 
+### ✔️ Expect minor finishing
 
-👀 EYE ASSEMBLY
-All servos must be zeroed before assembly. Sand + deburr surfaces where rotation occurs.
+Every printer behaves differently. You may need:
 
+* Sanding edges and mating surfaces
+* Cleaning holes with a 3 mm drill bit
+* Deburring pivot points
+* Slight heat forming (hair dryer/heat gun) for tight fits
 
-Step 5 — Right Eyelid Mechanism
-Parts: Top Eyelid R, Eyelid Horn 1 R, Lever Hub, Eyelid Control Arm R
-Tips:
- M3 hardware must be used; larger screw heads interfere with eyelid movement.
+### ✔️ Motion parts must move freely
 
+Any friction in:
 
-Step 6 — Left Eyelid Mechanism
-Repeat Step 5 for the left side.
+* Eye pitch
+* Eye yaw
+* Eyelid levers
+* Neck joints
 
+…will result in **overworked motors**.
 
-Step 7 — Eyes Top Mount + Servo (ID 4)
-Attach servo after inserting spacers.
-Tips:
- If the servo pocket is tight, lightly sand or heat-soften the printed surfaces.
+If something sticks:
 
+* Sand lightly
+* Ream the hole
+* Remove stringing
 
-Step 8 — (Optional) Eyes LR Horn
-This step can be skipped.
+---
 
-Step 9 — Eye Servo Mount + Servo (ID 5)
-Attach Eyelid Servo Control Arm L, Eye UD Mount 1, and X3P Cable.
-Tips:
- Insert servo spacers before mounting.
+# 4. Preparing Your Dynamixel Motors (Critical)
 
+Before installing ANY motors mechanically, each motor must be:
 
-Step 10 — Add Eyes UD Lever + Lever Hub
-Connect to assembly from Step 9.
+1. **Assigned a correct ID**
+2. **Set to Protocol 2.0**
+3. **Set to Baud: 57,600 bps**
+4. **Physically labeled**
+5. **Zeroed (centered) before horn installation**
 
+Use Dynamixel Wizard 2.0:
 
-Step 11 — Right Eyelid Servo System (ID 6)
-Attach Eyelid Servo Control Arm R and 2× X3P cables.
+| ID | Function   |
+| -- | ---------- |
+| 1  | neck_yaw   |
+| 2  | neck_pitch |
+| 3  | eyes_pitch |
+| 4  | eyes_yaw   |
+| 5  | lid_left   |
+| 6  | lid_right  |
 
+### Centering Procedure
 
-Step 12 — Combine Step 7 + Step 8
+1. Disable torque
+2. Rotate joint by hand to approximate center
+3. Re-enable torque
+4. Use Wizard to set goal position = center
+5. Install servo horn while holding the output shaft centered
 
+A poorly centered servo makes the entire assembly impossible to align later.
 
-Step 13 — Combine Step 10 + 11 + 12
-Connect:
-Servo ID 6 → Servo ID 4
+---
 
+# 5. 3D Printing Guidelines & Troubleshooting (PLA Only)
 
-Servo ID 6 → Servo ID 5
+### 5.1 Print Settings
 
+* Nozzle: **0.4 mm**
+* Layer height: **0.16–0.20 mm**
+* Infill: **20–40%** (structural parts 40–50%)
+* Bed: **60°C**
+* Nozzle: **195–215°C**
+* Cooling: **100% after first layers**
 
-Step 14 — Eye Globes
-Assemble Eyes 1, Iris 1, and Pupil 1 (x2).
-Tips:
- Attach using screws or glue.
+---
 
+## 5.2 Troubleshooting Guide
 
-Step 15 — LR Lever Assembly
-Attach Eyes LR Lever 1 and Lever Hubs.
+### 🧵 **Problem: Spaghetti failure**
 
+Cause: **Bed adhesion failure**
+Two typical root causes:
 
-Step 16 — Add Lower Mount Eyes
+1. **Print cannot grip the bed surface**
 
+   * Clean bed with 90–99% IPA
+   * Add glue stick or painter’s tape
+   * Increase first-layer squish
+   * Slow first layer to 20–25 mm/s
 
-Step 17 — Add Eye Face Mount L + R
+2. **Poor part orientation**
 
+   * Re-orient so the largest flat surface touches the bed
+   * Add **brim** (5–10 mm)
+   * Avoid printing tall skinny parts without support
 
-Step 18 — Combine Eyelids + Eyes
-Integrate assemblies from Steps 5, 6, and 17.
+---
 
+### ❌ Corners lifting or warping
 
-🧠 HEAD ASSEMBLY
-All servo positions must be zeroed before installation.
+* Increase bed temperature slightly
+* Add a brim
+* Reduce fan on first 5 layers
+* Re-level the bed
 
-Step 19 — Attach Eyes to Lower Head
-Add Eye Face Mount R and Lower Head 1; install the steel shaft.
+---
 
+### 🔩 Holes too tight / pegs don’t fit
 
-Step 20 — Neck Front Cover + Rear Head Mounts + Camera Mount
+* Clean with a 3 mm drill bit **by hand**
+* Lightly sand
+* Ream pivot holes carefully
 
+---
 
-Step 21 — Combine Steps 19 + 20
+### 🪡 Stringing
 
+* Temperature too hot → lower by 5–10°C
+* Increase retraction distance or speed
 
-Step 22 — Add Neck Cover Servo Mount
+---
 
+### 📏 Dimensional inaccuracies
 
-Step 23 — Eyes UD Horn + Servo (ID 3)
-Tips:
- Do not overtighten servo horn screws.
+* Slow print speed
+* Ensure belts are tight
+* Increase wall count to 3 perimeters
 
+---
 
-Step 24 — Combine Step 22 + Step 23
-Insert servo spacers before fastening.
+# 6. Neck Assembly
 
+> Images and detailed diagrams can be found in the Hello-Robo tutorial.
+> The following is MakiMate-specific (RPi 5 + OpenCM).
 
-Step 25 — Combine Step 18 + Step 24
-Add Eyelid Center Mount and aluminum spacer.
+### Step 1 — Initial Neck Assembly
 
+Parts: Neck Cover 1, Neck Servo Mount, 2× Neck Spacers, Servo **ID 1**, cables
 
-Step 26 — Add Rear Head Mount
+* Use CNC/Delrin spacers if possible
+* Ensure servo horn rotates freely
 
+### Step 2 — Install Servo ID 2
 
-Step 27 — Add Eye Face Mount 2 (x2)
+* Remove servo back screws
+* Add spacers
+* Attach to Neck 1
 
+### Step 3 — Combine Step 1 + 2
 
-Step 28 — Install Raspberry Pi Camera on Camera Mount 2
+* Add Neck 2
+* Route ribbon cable left
+* Route servo cables along edges
 
+### Step 4 — Add Neck Head Mount L
 
-Step 29 — Combine Steps 27 + 28
+* Use M3 screws into previously installed inserts
+* Sand holes if alignment is tight
 
+---
 
-Step 30 — Add Ears 1 + 2
-Each ear is designed to fit a 66mm RGB LED ring.
+# 7. Eye Assembly
 
+### Step 5 — Right Eyelid
 
-Step 31 — Add Face 1
-Ensure camera is perfectly centered with the mouth opening.
+Assemble Top Eyelid R, Lever Hub, Control Arm.
+Ensure friction-free motion.
 
+### Step 6 — Left Eyelid
 
-Step 32 — Final Head Closure
-Verify all servo connections before closing.
+Mirror of Step 5.
 
+### Step 7 — Eyes Yaw Servo (ID 4)
 
-🟦 BODY ASSEMBLY
+Install with spacers; lightly sand if tight.
 
-Step 33 — Attach Head Assembly to Torso Base
-Connect to Torso Base Mount 2, Neck Servo Mount 2, and the X3P cable.
+### Step 8 — Eyes LR Horn (optional)
 
+### Step 9 — Left Eyelid Servo (ID 5)
 
-Step 34 — Micro SD Extension
-Align it correctly with Torso Base Mount 2.
+Attach servo & linkages.
 
+### Step 10 — Eyes UD Lever
 
-Step 35 — Install Raspberry Pi
-Add Micro USB cable and panel USB cable.
+### Step 11 — Right Eyelid Servo (ID 6)
 
+### Step 12 — Combine Step 7 + 8
 
-Step 36 — Add Base Top 1 + Power Cabling
+### Step 13 — Combine Steps 10 + 11 + 12
 
+### Step 14 — Eye Globes
 
-Step 37 — Install OpenCM9.04
-Plug in micro-USB before mounting.
+Assemble eyes + iris + pupils.
 
+### Step 15 — LR Lever
 
-Step 38 — Add Neck Back Mount 2
+### Step 16 — Lower Mount Eyes
 
+### Step 17 — Face Mounts L + R
 
-Step 39 — Microphone Assembly (Did not use AIY kit)
+### Step 18 — Combine Eyelids + Eyes
 
-Step 40 — Combine Step 38 + Step 39
+Ensure ALL eyelid motions are smooth before continuing.
 
+---
 
-Step 41 — Install 5V PC Fan into Base Bttm 1 (Did not use 5V fan)
+# 8. Head Assembly
 
-Step 42 — (Skipped)
-Google AIY button not used.
+### Step 19 — Attach Eyes to Lower Head
 
-Step 43 — Connect Main Power Harness Cables
+### Step 20 — Neck Front Cover + Rear Head Mounts + Camera Mount
 
+### Step 21 — Combine Steps 19 + 20
 
-Step 44 — Voice HAT Accessory Board (Optional)
+### Step 22 — Add Neck Cover Servo Mount
 
-Step 45 — Install 3" Speaker + HDMI Panel Mount
+### Step 23 — Install Eyes Pitch Servo (ID 3)
 
+### Step 24 — Combine Step 22 + 23
 
-Step 46 — Combine Step 41 + Step 45
+### Step 25 — Combine Eyelids + Eyes With Servo Assembly
 
+### Step 26 — Add Rear Head Mount
 
-Step 47 — (Skipped) Speaker Cloth Assembly
+### Step 27 — Add Eye Face Mount 2 (x2)
 
+### Step 28 — Install Raspberry Pi Camera
 
-Step 48 — Combine Step 46 + Step 47
+### Step 29 — Combine Steps 27 + 28
 
+### Step 30 — Add Ears (support 66 mm LED rings)
 
-Step 49 — Add Body B 1
+### Step 31 — Add Face 1
 
+### Step 32 — Final Head Closure
 
-Step 50 — Add HDMI Panel Mount
+Verify all:
 
+* Servo IDs are correct
+* Cables are free, not pinched
+* Eyes and eyelids move freely
 
-Step 51 — Final Body Assembly Completion
+---
 
+# 9. Body Assembly
 
+### Step 33 — Attach Head to Torso Base
+
+### Step 34 — SD Extension (optional; often skipped)
+
+### Step 35 — Install Raspberry Pi 5 and USB/HDMI panel extensions
+
+### Step 36 — Base Top + Power Cabling
+
+### Step 37 — Install OpenCM9.04
+
+Connect USB before mounting.
+
+### Step 38 — Neck Back Mount
+
+### Step 39 — Microphone Assembly (ReSpeaker, not AIY)
+
+### Step 40 — Combine Step 38 + 39
+
+### Step 41 — 5V Fan (not used)
+
+### Step 42 — AIY Button (skipped)
+
+### Step 43 — Connect Power Harness
+
+### Step 44 — Optional boards (not included)
+
+### Step 45 — Install 2" Speaker + HDMI Panel Mount
+
+### Step 46 — Combine Step 41 + 45
+
+### Step 47 — Speaker Cloth (optional)
+
+### Step 48 — Lower Base Close-Out
+
+### Step 49 — Add Body B
+
+### Step 50 — Final HDMI Panel Mounting
+
+### Step 51 — Final Assembly
+
+Check:
+
+* Head movement
+* Cable routing
+* Insert integrity
+* Structural tightness
+
+---
+
+# 10. Full Tutorial Reference
+
+For full photos, exploded diagrams, and additional context, use the original MAKI tutorial:
+
+👉 **[https://www.hello-robo.com/tutorials](https://www.hello-robo.com/tutorials)**
+
+The MakiMate build modifies some steps (new Pi, new speaker, no AIY kit), but mechanically follows the same layout.
+
+---
+
+# 🧭 Navigation
+
+🔙 Back to Main Documentation
+➡️ [`../../README.md`](Overall_README.md)

@@ -170,8 +170,9 @@ class MakiBehavior(Node):
 
         # Closing phase: override lids to closed
         if self.blink_phase == 1:
-            lid_left = -18.0
-            lid_right = 22.0
+            # CLOSED LIDS: left=-19.0, right=26.0
+            lid_left = -19.0
+            lid_right = 26.0
             self.blink_step += 1
             if self.blink_step >= 4:  # ~4 frames closed
                 self.blink_phase = 2
@@ -351,7 +352,8 @@ class MakiBehavior(Node):
             t = counter["t"] % 60
 
             if t < 5:
-                arr = [0.0, 0.0, 0.0, 0.0, -18.0, 22.0]
+                # CLOSED LIDS here too
+                arr = [0.0, 0.0, 0.0, 0.0, -19.0, 26.0]
             elif t < 10:
                 arr = [0.0, 0.0, 0.0, 0.0, 20.0, -20.0]
             else:
@@ -436,8 +438,9 @@ class MakiBehavior(Node):
             if state["blink_t"] >= state["blink_interval"]:
                 b = state["blink_t"] - state["blink_interval"]
                 if b < 6:
-                    lid_left = -14.0
-                    lid_right = 18.0
+                    # CLOSED LIDS in big_shake_no
+                    lid_left = -19.0
+                    lid_right = 26.0
                 elif b < 12:
                     lid_left = 20.0
                     lid_right = -20.0
@@ -593,3 +596,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+

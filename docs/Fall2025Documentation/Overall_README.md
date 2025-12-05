@@ -18,19 +18,19 @@ Operating system setup, development dependencies, package management
 
 ### 2️⃣ Drivers & Firmware
 Dynamixel servo control, sensor interfaces, and microcontroller firmware  
-➡️ [`docs/Fall2025Documentation/Drivers_Firmware_README.md`](docs/Fall2025Documentation/Drivers_Firmware_README.md)
+➡️ [`Drivers_Firmware_README.md`](Drivers_Firmware_README.md)
 
 ### 3️⃣ ROS 2 & Software Stack
 Workspace design, ROS2 packages, launch files, nodes, and behavior logic  
-➡️ [`docs/Fall2025Documentation/ROS2_README.md`](docs/Fall2025Documentation/ROS2_README.md)
+➡️ [`ROS2_README.md`](ROS2_README.md)
 
 ### 4️⃣ Electrical Hardware
 PCB schematics, wiring diagrams, component specifications, power systems  
-➡️ [`docs/Fall2025Documentation/Electrical_README.md`](docs/Fall2025Documentation/Electrical_README.md)
+➡️ [`Electrical_README.md`](Electrical_README.md)
 
 ### 5️⃣ Mechanical Hardware
 CAD models, assembly instructions, mounting solutions, and part details  
-➡️ [`docs/Fall2025Documentation/Mechancical_README.md`](docs/Fall2025Documentation/Mechanical_README.md)
+➡️ [`Mechancical_README.md`](Mechanical_README.md)
 
 ---
 

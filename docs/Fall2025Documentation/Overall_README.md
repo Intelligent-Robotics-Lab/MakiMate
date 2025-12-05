@@ -14,23 +14,23 @@ Select one of the following to explore the respective documentation:
 
 ### 1️⃣ Ubuntu Setup
 Operating system setup, development dependencies, package management  
-➡️ [`docs/ubuntu/README.md`](docs/ubuntu/README.md)
+➡️ [`docs/Fall2025Documentation/Ubuntu_README.md`](docs/Fall2025Documentation/Ubuntu_README.md)
 
 ### 2️⃣ Drivers & Firmware
 Dynamixel servo control, sensor interfaces, and microcontroller firmware  
-➡️ [`docs/drivers/README.md`](docs/drivers/README.md)
+➡️ [`docs/Fall2025Documentation/Drivers_Firmware_README.md`](docs/Fall2025Documentation/Drivers_Firmware_README.md)
 
 ### 3️⃣ ROS 2 & Software Stack
 Workspace design, ROS2 packages, launch files, nodes, and behavior logic  
-➡️ [`docs/ros2/README.md`](docs/ros2/README.md)
+➡️ [`docs/Fall2025Documentation/ROS2_README.md`](docs/Fall2025Documentation/ROS2_README.md)
 
 ### 4️⃣ Electrical Hardware
 PCB schematics, wiring diagrams, component specifications, power systems  
-➡️ [`docs/electrical/README.md`](docs/electrical/README.md)
+➡️ [`docs/Fall2025Documentation/Electrical_README.md`](docs/Fall2025Documentation/Electrical_README.md)
 
 ### 5️⃣ Mechanical Hardware
 CAD models, assembly instructions, mounting solutions, and part details  
-➡️ [`docs/mechanical/README.md`](docs/mechanical/README.md)
+➡️ [`docs/Fall2025Documentation/Mechancical_README.md`](docs/Fall2025Documentation/Mechanical_README.md)
 
 ---
 

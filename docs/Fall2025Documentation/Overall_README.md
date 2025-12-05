@@ -24,6 +24,10 @@ Operating system setup, development dependencies, package management
 Dynamixel servo control, sensor interfaces, and microcontroller firmware  
 ➡️ [`Drivers_Firmware_README.md`](Drivers_Firmware_README.md)
 
+### 2.1 Hosting Local LLM On Windows Laptop
+Walkthrough on how to open the local LLM on the laptop for the AI functionality
+➡️ [`LLM_Hosting_README.md`](LLM_Hosting_README.md)
+
 ### 3️⃣ ROS 2 & Software Stack
 Workspace design, ROS2 packages, launch files, nodes, and behavior logic  
 ➡️ [`ROS2_README.md`](ROS2_README.md)

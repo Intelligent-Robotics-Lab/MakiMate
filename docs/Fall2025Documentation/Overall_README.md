@@ -30,7 +30,7 @@ PCB schematics, wiring diagrams, component specifications, power systems
 
 ### 5️⃣ Mechanical Hardware
 CAD models, assembly instructions, mounting solutions, and part details  
-➡️ [`Mechancical_README.md`](Mechanical_README.md)
+➡️ [`Hardware_README.md`](Hardware_README.md)
 
 ---
 

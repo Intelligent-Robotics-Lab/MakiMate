@@ -1,12 +1,19 @@
-# Drivers_Firmware_README.md
+# **Drivers_Firmware_README.md**
 
-This document collects all instructions related to **drivers, firmware, and device permissions** for the Raspberry Pi camera, Dynamixel motors (via OpenCM9.04), and the ReSpeaker 4-Mic Array with LED ring. Everything below is intended to be directly copy–pasted into the `Drivers_Firmware_README.md` file.
+This document contains all instructions related to **drivers**, **firmware**, and **device permissions** for:
+
+* The Raspberry Pi Camera
+* Dynamixel motors (via OpenCM9.04)
+* The ReSpeaker 4-Mic Array (microphone + LED ring)
+* And how these hardware access layers support the full ROS2 audio + vision + motor stack.
+
+This file is intended to be used **directly as a README**, with no additional editing required.
 
 ---
 
-## 1. System-Level Device & Driver Packages
+# **1. System-Level Device & Driver Packages**
 
-Install core system tools and hardware-related utilities (camera, USB, audio, build tools):
+Install core system tools and hardware utilities needed for camera, USB, audio, and firmware operations:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
@@ -24,44 +31,46 @@ Reboot:
 sudo reboot
 ```
 
-These packages provide:
+These tools provide:
 
-* `v4l-utils` – tools for Video4Linux (camera debug/listing).
-* `usbutils` – `lsusb` and related tools for USB devices (ReSpeaker, OpenCM, etc.).
-* `pulseaudio` – user-space audio system for microphones/speakers.
-* Build tools for building camera drivers (`libcamera`, `rpicam-apps`) from source.
+* **v4l-utils** → camera debugging and device listing
+* **usbutils** → identify USB devices (`lsusb`)
+* **pulseaudio** → audio routing for ASR/TTS
+* Build tools → required for building `libcamera` + `rpicam-apps`
 
 ---
 
-## 2. User & Group Permissions for Hardware Access
+# **2. User & Group Permissions for Hardware Access**
 
-Grant your user full access to serial ports, audio devices, video devices, and plug-and-play USB hardware:
+Grant your user full access to:
+
+* Serial ports (Dynamixel)
+* Audio devices (ReSpeaker)
+* Video devices (camera)
+* USB devices (ReSpeaker LED ring, OpenCM)
 
 ```bash
 sudo usermod -aG dialout,audio,video,plugdev $(whoami)
 sudo reboot
 ```
 
-This is required so that:
+Required so that:
 
-* The **OpenCM9.04** (Dynamixel motors) on `/dev/tty*` is accessible without `sudo` (via `dialout`).
-* The **ReSpeaker 4-Mic Array** and other ALSA audio devices work without `sudo` (via `audio`).
-* The **Raspberry Pi camera** and other video devices are accessible (via `video`).
-* USB devices (ReSpeaker LED ring, OpenCM, etc.) can be controlled (via `plugdev`).
+* **OpenCM9.04** appears as `/dev/ttyACM*` and is usable without `sudo`
+* **ReSpeaker microphone + LED ring** work inside the ASR/TTS pipeline
+* **Raspberry Pi camera** nodes can access `/dev/video*` or libcamera backend
 
 ---
 
-## 3. Dynamixel Motors (OpenCM9.04) – Driver & Permissions
+# **3. Dynamixel Motors (OpenCM9.04) – Firmware & Driver Setup**
 
-### 3.1 Install Dynamixel SDK and Supporting Libraries
-
-From your Pi:
+### 3.1 Install Dynamixel SDK + supporting libraries
 
 ```bash
 source ~/asr_venv/bin/activate
 
 pip install setuptools
-pip install PyYAML  # capitalization doesn’t matter: PyYAML / pyyaml
+pip install PyYAML
 
 deactivate
 
@@ -70,97 +79,66 @@ sudo apt install libportaudio2 libportaudiocpp0 portaudio19-dev
 chmod +x /home/makimate/MakiMate/piper_bin/piper
 ```
 
-* `ros-jazzy-dynamixel-sdk` provides the **drivers and ROS2 bindings** needed to talk to Dynamixel servos via OpenCM9.04.
-* `portaudio` libraries are needed for some audio/ASR components used in the same system.
+### 3.2 Udev Rules for Dynamixel
 
-### 3.2 Udev Rules for Dynamixel (via `system_configs/udev`)
-
-If your repo contains `system_configs/udev/99-dynamixel.rules`, it will be installed as part of the Piper install step (below) and ensures that Dynamixel devices are accessible without `sudo`.
-
-Run:
+If `system_configs/udev/99-dynamixel.rules` is included in the repo, run:
 
 ```bash
 cd ~/MakiMate/piper_bin
 ./install_piper.py
 ```
 
-This script:
+This:
 
-* Installs the Piper TTS binary.
-* Installs any udev rules provided in `system_configs/udev/`, such as `99-dynamixel.rules`.
-* Ensures that the OpenCM9.04 and other related devices have correct permissions on plug-in.
-
-> If you modify or add your own udev rules, re-run `./install_piper.py` or manually copy the `*.rules` files into `/etc/udev/rules.d/` and reload udev (see below in the ReSpeaker section for the exact pattern).
+* Installs Piper TTS
+* Installs udev rules (Dynamixel + ReSpeaker if applicable)
+* Ensures OpenCM9.04 is readable without `sudo`
 
 ---
 
-## 4. Raspberry Pi Camera (Pi 5 – Ubuntu 24.04)
+# **4. Raspberry Pi Camera – Firmware & Tools (Pi 5 + Ubuntu 24.04)**
 
-The Raspberry Pi 5 uses the **libcamera/rpicam** stack. You must both enable the camera at the firmware level and install the camera tools (`rpicam-apps`).
+Raspberry Pi 5 uses the **libcamera / rpicam** pipeline.
+You MUST enable the camera via config files and manually install `rpicam-apps`.
 
-### 4.1 Apply System Configs and Install ROS Camera Info Manager
-
-From your MakiMate repo:
+### 4.1 Apply system camera configs and install ROS camera manager:
 
 ```bash
 cd ~/MakiMate/system_configs
 ./install_configs.sh
 sudo apt install ros-jazzy-camera-info-manager
-```
-
-* `install_configs.sh` configures `/boot/firmware/config.txt` and other system files so the Pi camera is enabled at boot.
-* `ros-jazzy-camera-info-manager` provides the ROS2 camera calibration/metadata support.
-
-Reboot after this step:
-
-```bash
 sudo reboot
 ```
 
----
+### 4.2 Build & Install `libcamera` and `rpicam-apps` (manual method)
 
-### 4.2 Install Raspberry Pi Camera Tools (rpicam-apps)
+Ubuntu 24.04 usually does **not** provide `rpicam-apps`.
+You must build them from source — the commands below do exactly that.
 
-On Ubuntu 24.04 for Pi, `rpicam-apps` is often **not** available via `apt`, so you build it from source.
-
-#### 4.2.1 Check if `rpicam-apps` is available (optional)
+#### Check if `rpicam-apps` exists:
 
 ```bash
 sudo apt update
 apt-cache policy rpicam-apps
 ```
 
-If `Candidate:` is `(none)` or no version is listed, you must build from source.
+If no candidate exists → proceed with manual build.
 
----
-
-#### 4.2.2 Install Build Dependencies
+#### Install build dependencies:
 
 ```bash
 sudo apt update
 sudo apt full-upgrade -y
-
-# Essential build tools
 sudo apt install -y git python3-pip python3-jinja2 meson cmake ninja-build build-essential
-
-# libcamera (RPi fork) dependencies
 sudo apt install -y libboost-dev libgnutls28-dev openssl libtiff5-dev pybind11-dev \
                     python3-yaml python3-ply libglib2.0-dev libgstreamer-plugins-base1.0-dev
-
-# rpicam-apps dependencies
 sudo apt install -y libboost-program-options-dev libdrm-dev libexif-dev \
                     libepoxy-dev libjpeg-dev libtiff5-dev libpng-dev
-
-# For desktop Ubuntu (GUI preview window)
 sudo apt install -y qtbase5-dev libqt5core5a libqt5gui5 libqt5widgets5
-
-# Video4Linux utils (handy for debugging)
 sudo apt install -y v4l-utils
 ```
 
----
-
-#### 4.2.3 Build Raspberry Pi’s `libcamera` Fork
+#### Build libcamera (Raspberry Pi fork):
 
 ```bash
 cd ~
@@ -179,24 +157,17 @@ meson setup build --buildtype=release \
   -Ddocumentation=disabled \
   -Dpycamera=enabled
 
-# Build (takes a while on the Pi 5)
 ninja -C build
-
-# Install
 sudo ninja -C build install
-cd ~
 ```
 
----
-
-#### 4.2.4 Build and Install `rpicam-apps`
+#### Build rpicam-apps:
 
 ```bash
 cd ~
 git clone https://github.com/raspberrypi/rpicam-apps.git
 cd rpicam-apps
 
-# For Ubuntu Desktop (with preview window)
 meson setup build \
   -Denable_libav=disabled \
   -Denable_drm=enabled \
@@ -206,96 +177,54 @@ meson setup build \
   -Denable_tflite=disabled \
   -Denable_hailo=disabled
 
-# Build
 meson compile -C build
-
-# Install
 sudo meson install -C build
-
-# Refresh linker cache
 sudo ldconfig
-
-cd ~
 ```
 
-After this, binaries like `rpicam-hello`, `rpicam-still`, etc. will be available in your `PATH`.
-
----
-
-### 4.3 Verify Camera Operation
-
-After reboot:
+### 4.3 Test camera:
 
 ```bash
 rpicam-hello -t 0 --autofocus-mode continuous
 ```
 
-You should see a camera preview window with continuous autofocus.
-
-If there are issues, check the CSI camera bus:
-
-```bash
-dmesg | grep -i csi
-```
-
-You can also list video devices:
-
-```bash
-v4l2-ctl --list-devices
-```
-
 ---
 
-## 5. ReSpeaker 4-Mic Array (Mic + LED Ring) – Drivers & Permissions
+# **5. ReSpeaker 4-Mic Array – Audio + LED Ring Permissions**
 
-This section covers:
-
-* Ensuring ALSA sees the ReSpeaker device.
-* Granting group/udev permissions so the **microphone and LED ring** can be used without `sudo`.
-
-### 5.1 Verify the Device in ALSA
-
-List available audio capture devices:
+### 5.1 Verify via ALSA
 
 ```bash
 arecord -l
 ```
 
-You should see a device similar to:
+You should see:
 
 ```
-card 1: seeed4micvoicec [seeed-4mic-voicecard], device 0: ...
+card 1: seeed4micvoicec ...
 ```
 
-### 5.2 (Optional) Set Default ALSA Device
-
-Edit `/etc/asound.conf`:
+### 5.2 Optional: set default audio device
 
 ```bash
 sudo nano /etc/asound.conf
 ```
 
-Example contents:
+Example:
 
-```text
+```
 defaults.pcm.card 1
 defaults.ctl.card 1
 ```
 
-Restart PulseAudio:
+Restart:
 
 ```bash
 pulseaudio -k
 pulseaudio --start
 ```
 
-This helps make the ReSpeaker the default input device for ASR.
-
----
-
-### 5.3 Add User to Relevant Groups
-
-Make sure your user is in the `plugdev`, `audio`, and `dialout` groups:
+### 5.3 Required groups
 
 ```bash
 sudo usermod -aG plugdev $USER
@@ -304,146 +233,157 @@ sudo usermod -aG dialout $USER
 sudo reboot
 ```
 
----
+### 5.4 Udev rule for LED ring control
 
-### 5.4 Create udev Rule for ReSpeaker USB Device (Mic + LED Ring)
-
-1. **Find the USB IDs**:
-
-   ```bash
-   lsusb
-   ```
-
-   The ReSpeaker device will look like:
-
-   ```text
-   Bus 001 Device 004: ID CCCC:DDDD SEEED ReSpeaker 4 Mic Array
-   ```
-
-   Here:
-
-   * `CCCC` = `idVendor`
-   * `DDDD` = `idProduct`
-
-2. **Create udev rule**:
-
-   ```bash
-   sudo tee /etc/udev/rules.d/99-respeaker.rules >/dev/null << 'EOF'
-   SUBSYSTEM=="usb", ATTRS{idVendor}=="CCCC", ATTRS{idProduct}=="DDDD", MODE="0666", GROUP="plugdev"
-   EOF
-   ```
-
-   Replace `CCCC` and `DDDD` with the actual values you saw from `lsusb`.
-
-3. **Reload udev rules**:
-
-   ```bash
-   sudo udevadm control --reload-rules
-   sudo udevadm trigger
-   ```
-
-4. **Re-add user groups (if needed) and reboot**:
-
-   ```bash
-   sudo usermod -aG plugdev $USER
-   sudo usermod -aG audio $USER
-   sudo usermod -aG dialout $USER
-
-   sudo reboot
-   ```
-
-After reboot, the ReSpeaker microphone and LED ring should be accessible without `sudo`.
-
----
-
-### 5.5 Quick LED Test (Requires `pixel-ring` in `asr_venv`)
-
-Activate your ASR virtual environment:
-
-```bash
-source ~/asr_venv/bin/activate
-```
-
-Run this inline Python test:
-
-```bash
-python3 - << "EOF"
-from time import sleep
-from pixel_ring import pixel_ring
-
-print("LED ON (listen mode) for 2 seconds...")
-pixel_ring.set_brightness(16)
-pixel_ring.listen()
-sleep(2)
-
-print("LED OFF for 2 seconds...")
-pixel_ring.off()
-sleep(2)
-
-print("LED THINK mode for 2 seconds...")
-pixel_ring.think()
-sleep(2)
-
-pixel_ring.off()
-print("LED test complete.")
-EOF
-```
-
-If the udev rule and groups are correct, the LED ring will change patterns without requiring `sudo`.
-
----
-
-## 6. Camera & Motor Diagnostics (Optional but Recommended)
-
-### 6.1 USB Devices
-
-List all USB devices to check that ReSpeaker and OpenCM9.04 are seen by the system:
+Find device:
 
 ```bash
 lsusb
 ```
 
-### 6.2 Serial Ports (for OpenCM9.04 / Dynamixels)
+Add rule:
+
+```bash
+sudo tee /etc/udev/rules.d/99-respeaker.rules >/dev/null << 'EOF'
+SUBSYSTEM=="usb", ATTRS{idVendor}=="CCCC", ATTRS{idProduct}=="DDDD", MODE="0666", GROUP="plugdev"
+EOF
+```
+
+Reload:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+### 5.5 LED ring test
+
+```bash
+source ~/asr_venv/bin/activate
+
+python3 - << "EOF"
+from time import sleep
+from pixel_ring import pixel_ring
+
+pixel_ring.set_brightness(16)
+pixel_ring.listen()
+sleep(2)
+
+pixel_ring.off()
+sleep(2)
+
+pixel_ring.think()
+sleep(2)
+
+pixel_ring.off()
+EOF
+```
+
+---
+
+# **6. How These Drivers Support the ROS2 Pipeline**
+
+These low-level drivers & permissions enable the following ROS2 nodes to function correctly:
+
+### **Audio / ASR**
+
+* `respeaker_vosk_asr.py`
+* `asr_led_node.py`
+
+### **Motors**
+
+* `maki_dxl_6.py`
+* `maki_expressions.py`
+* `maki_behavior.py`
+
+### **LLM Integration**
+
+* `llm_bridge_node.py`
+
+### **TTS (IMPORTANT UPDATE)**
+
+## **Natural TTS (`natural_tts.py`) — NEW PRIMARY TTS SYSTEM**
+
+Natural TTS:
+
+* Uses the **Piper TTS engine** (GPU/CPU-optimized ONNX runtime)
+* Uses the **en_US-john-medium.onnx** voice model
+  (Your default production-quality voice)
+* Provides **streaming speech**, meaning TTS begins speaking before the LLM finishes sending text
+* Publishes to `/asr/enable` to **mute ASR while speaking**, preventing echo/re-recognition
+* Is faster, clearer, and more natural than pyttsx3
+
+### **Simple TTS (`simple_tts_node.py`) — OBSOLETE**
+
+The legacy Simple TTS node:
+
+* Used `pyttsx3`
+* Spoke only final answers (no streaming)
+* Produced robotic, low-quality audio
+
+It is now:
+
+> **Completely replaced by Natural TTS**
+> **Kept only for documentation and fallback purposes**
+
+Natural TTS is the **only recommended and supported TTS path** moving forward.
+
+### Hardware interaction (TTS pipeline)
+
+Natural TTS requires:
+
+* Working **audio output**
+* Working **ASR enable/disable** permission to mute listening
+* No root access (all handled via group/udev settings above)
+
+---
+
+# **7. Diagnostics**
+
+Useful debugging commands for camera, motors, and USB devices:
+
+### USB devices:
+
+```bash
+lsusb
+```
+
+### Serial ports:
 
 ```bash
 ls /dev/tty*
 ```
 
-Typical devices include `/dev/ttyACM0` or `/dev/ttyUSB0` for OpenCM9.04.
-You should be able to access them without `sudo` after joining the `dialout` group.
-
-### 6.3 Video Devices (Camera)
+### Video devices:
 
 ```bash
 v4l2-ctl --list-devices
 ```
 
-This helps confirm that the CSI camera or any USB cameras are registered and available.
+---
+
+# **8. How the Firmware + Drivers Enable the Full Robot Stack**
+
+These hardware capabilities unlock the ROS2 functionality:
+
+| Hardware               | ROS Nodes That Depend On It | Purpose                        |
+| ---------------------- | --------------------------- | ------------------------------ |
+| ReSpeaker Microphone   | `respeaker_vosk_asr.py`     | Voice input                    |
+| ReSpeaker LED Ring     | `asr_led_node.py`           | Listening indicator            |
+| ReSpeaker Output Audio | `natural_tts.py`            | High-quality streaming TTS     |
+| OpenCM9.04 Servo Bus   | `maki_dxl_6.py`             | Neck, eyelid, and eye movement |
+| Pi Camera              | `face_tracker_node.py`      | Face detection for interaction |
+| USB Permissions        | All of the above            | Runs without `sudo`            |
+
+Natural TTS integrates tightly with:
+
+* `llm_bridge_node.py` (streaming text)
+* `/asr/enable` (ASR mute signal)
+* The Piper binary installed in `piper_bin/`
 
 ---
 
-## 7. How These Drivers & Permissions Are Used (Context)
-
-These device drivers and permissions are required by the ROS2 nodes that:
-
-* Capture audio from the **ReSpeaker 4-Mic Array** and feed it to Vosk ASR.
-* Control the **LED ring** for ASR listening/idle indicators.
-* Send commands to the **OpenCM9.04** to drive the Dynamixel motors.
-* Bridge between ASR/LLM/TTS while muting/unmuting ASR correctly.
-
-In the MakiMate project, key ROS2 nodes include:
-
-* `respeaker_vosk_asr.py` – microphone → Vosk ASR → ROS topics (requires audio and ReSpeaker access) 
-* `asr_led_node.py` – controls ReSpeaker LED ring based on ASR enable state (requires USB + `pixel_ring` access) 
-* `simple_tts_node.py` – uses TTS and toggles ASR enable/disable via `/asr/enable` topic. 
-* `llm_bridge_node.py` – sends ASR text to an external LLM server and streams responses back into ROS (works together with the TTS and ASR nodes). 
-
-Correct hardware drivers and permissions are necessary for these nodes to run reliably without `sudo`.
-
----
-
-## 🧭 Navigation
+# **🧭 Navigation**
 
 🔙 Back to Main Documentation
 ➡️ [`../../README.md`](Overall_README.md)
-

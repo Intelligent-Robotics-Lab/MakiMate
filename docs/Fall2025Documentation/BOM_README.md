@@ -54,3 +54,9 @@ The BOM is organized by **Subsystem** to reflect the original color-coding used 
 | Electrical Engineering | Speaker Stereo                               | 1 EA | [Buy here](https://www.amazon.com/dp/B081169PC5?ref=ppx_yo2ov_dt_b_fed_asin_title) |  |
 | Electrical Engineering | 5V Audio Amplifier                           | 1 EA | [Buy here](https://www.amazon.com/dp/B00LODGV64?ref=ppx_yo2ov_dt_b_fed_asin_title) |  |
 
+---
+
+## 🧭 Navigation
+
+🔙 Back to Main Documentation  
+➡️ [`../../README.md`](Overall_README.md)

@@ -56,6 +56,7 @@ Walkthrough guide on how to get the project running on a new Pi from start to fi
 │   └── BOM_README.md
 │   └── Overall_README.md <----(THIS FILE)
 │   └── Drivers_Firmware_README.md
+│   └── LLM_HOSTING_README.md
 │   └── ROS2_README.md
 │   └── Electrical_README.md
 │   └── Hardware_README.md

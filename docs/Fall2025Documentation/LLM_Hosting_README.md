@@ -98,8 +98,10 @@ On your Windows PC:
 
    ```powershell
    cd C:\MakiMate
-   git clone https://github.com/Intelligent-Robotics-Lab/makimate-llm-server.git
-   cd makimate-llm-server
+   git clone https://github.com/Intelligent-Robotics-Lab/MakiMate
+   cd .\MakiMate\
+   cd .\makimate-llm-server\
+
    ```
 
 You should now see:
@@ -316,7 +318,8 @@ Typical setup:
 2. On the Pi, in the MakiMate repo, edit:
 
    ```bash
-   nano ~/MakiMate/src/makimate_asr/makimate_asr/llm_bridge_node.py
+   nano ~/MakiMate/src/server_llm/server_llm/llm_bridge_node.py
+
    ```
 
 3. Set `laptop_host` to that IP:

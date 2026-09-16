@@ -5,7 +5,7 @@ FROM ros:jazzy-ros-base
 SHELL ["/bin/bash", "-lc"]
 
 RUN apt-get update && apt-get install -y \
-    python3-colcon-common-extensions python3-pip python3-setuptools \
+    python3-colcon-common-extensions python3-pip python3-setuptools ros-jazzy-camera-info-manager libcamera-dev ros-jazzy-cv-bridge ros-jazzy-image-transport \ 
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ws
@@ -33,4 +33,3 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Default command runs your node
 CMD ["ros2","launch","makimate_bringup","bringup.launch.py"]
-
